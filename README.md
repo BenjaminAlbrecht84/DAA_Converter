@@ -20,4 +20,4 @@ Parameter | Description
 Parameter | Description
 --------- | -----------
 -d  | path to DAA-File
--p  | number of aivailable processors
+-p  | number of available processors
