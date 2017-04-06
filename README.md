@@ -4,7 +4,7 @@ This piece of code converts MAF-Files produced by LAST to DAA-Files, which can t
 
 ## Downloading the program
 
-Get the current version frome [here](https://github.com/BenjaminAlbrecht84/DAA_Converter/releases/download/v0.8.0/DAA_Converter-0.8.0.jar).
+Get the current version frome [here](https://github.com/BenjaminAlbrecht84/DAA_Converter/releases/download/v0.8.1/DAA_Converter.jar).
 
 ## Running the program
 
