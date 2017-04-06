@@ -54,7 +54,7 @@ public class Main {
 			System.out.println("Mandatory Options: ");
 			System.out.println("-m\t" + "path to MAF-File");
 			System.out.println("-q\t" + "path to query-file (FASTA/FASTQ)");
-			System.out.println("optional: ");
+			System.out.println("Optional: ");
 			System.out.println("-p\t" + "number of available processors");
 			System.out.println("-d\t" + "path to daa-file");
 			System.exit(0);
