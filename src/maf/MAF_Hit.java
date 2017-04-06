@@ -5,21 +5,26 @@ import java.util.Collections;
 import java.util.Comparator;
 
 import hits.Hit.FrameDirection;
+import util.DAACompressAlignment;
 import util.SparseString;
 
 public class MAF_Hit {
 
+	private String readName;
+	private int totalQueryLenth;
+	private byte[] packedQuerySequence;
 	private int rawScore;
-	private int subjectID, readID;
+	private int subjectID;
 	private int queryStart, refStart;
 	private FrameDirection frameDir;
 	private String[] ali = new String[2];
+	public ArrayList<Byte> editOperations;
 
-	public MAF_Hit(String[] lineTriple, ArrayList<Object[]> readInfo, ArrayList<Object[]> subjectInfo) {
+	public MAF_Hit(String[] lineTriple, Object[] readInfo, ArrayList<Object[]> subjectInfo) {
 		loadProperties(lineTriple, readInfo, subjectInfo);
 	}
 
-	public void loadProperties(String[] lineTriple, ArrayList<Object[]> readInfo, ArrayList<Object[]> subjectInfo) {
+	public void loadProperties(String[] lineTriple, Object[] readInfo, ArrayList<Object[]> subjectInfo) {
 
 		// parsing scoring parameters
 		String[] split = lineTriple[0].split("\\s+");
@@ -34,16 +39,17 @@ public class MAF_Hit {
 
 		// reading query info
 		split = lineTriple[2].split("\\s+");
-		Object[] read = { new SparseString(split[1]), null };
-		readID = Collections.binarySearch(readInfo, read, new InfoComparator());
+		readName = split[1];
 		queryStart = Integer.parseInt(split[2]);
 		frameDir = split[4].equals("+") ? FrameDirection.POSITIVE : FrameDirection.NEGATIVE;
 		ali[0] = split[6].toUpperCase();
 
-		if (frameDir == FrameDirection.NEGATIVE) {
-			int totalReadLength = (int) readInfo.get(readID)[2];
-			queryStart = totalReadLength - queryStart - 1;
-		}
+		// System.out.println(" Parsed: " + readInfo.get(readID)[0].toString());
+		// for (String l : lineTriple)
+		// System.out.println(l);
+		// System.out.println(ali[0] + "\n" + ali[1]);
+
+		editOperations = DAACompressAlignment.run(ali);
 
 	}
 
@@ -56,16 +62,19 @@ public class MAF_Hit {
 		}
 	}
 
+	public void setReadInfo(Object[] readInfo) {
+		packedQuerySequence = (byte[]) readInfo[1];
+		totalQueryLenth = (int) readInfo[2];
+		if (frameDir == FrameDirection.NEGATIVE)
+			queryStart = totalQueryLenth - queryStart - 1;
+	}
+
 	public int getRawScore() {
 		return rawScore;
 	}
 
 	public int getSubjectID() {
 		return subjectID;
-	}
-
-	public int getReadID() {
-		return readID;
 	}
 
 	public int getQueryStart() {
@@ -82,6 +91,28 @@ public class MAF_Hit {
 
 	public String[] getAli() {
 		return ali;
+	}
+
+	public ArrayList<Byte> getEditOperations() {
+		return editOperations;
+	}
+
+	public String getReadName() {
+		return readName;
+	}
+
+	public int getTotalQueryLenth() {
+		return totalQueryLenth;
+	}
+
+	public byte[] getPackedQuerySequence() {
+		return packedQuerySequence;
+	}
+
+	public boolean makesSense() {
+		if (subjectID < 0)
+			return false;
+		return true;
 	}
 
 }

@@ -6,10 +6,15 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Vector;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import util.LineCounter;
 import util.SparseString;
 
 public class FastAQ_Reader {
+
+	private static int maxProgress, lastProgress = 0;
+	private static AtomicInteger progress = new AtomicInteger();
 
 	private static final HashMap<Character, Integer> nucToIndex;
 	static {
@@ -25,12 +30,18 @@ public class FastAQ_Reader {
 		ArrayList<Object[]> readInfo = new ArrayList<Object[]>();
 		try {
 
+			maxProgress = (int) LineCounter.run(fastAQFile);
 			BufferedReader buf = new BufferedReader(new FileReader(fastAQFile));
 			String line, id = "";
 			boolean readSequence = false;
 			StringBuffer seq = new StringBuffer("");
-
+			int lineCounter = 0;
 			while ((line = buf.readLine()) != null) {
+
+				lineCounter++;
+				if (lineCounter % 100 == 0)
+					reportProgress(100);
+
 				if (line.startsWith("@") || line.startsWith(">")) {
 					if (seq.length() != 0 && !id.isEmpty()) {
 						Object[] o = { new SparseString(id), packSequence(seq.toString()), seq.length() };
@@ -44,20 +55,37 @@ public class FastAQ_Reader {
 				} else if (readSequence) {
 					seq = seq.append(line);
 				}
+
 			}
 			if (seq.length() != 0 && !id.isEmpty()) {
 				Object[] o = { new SparseString(id), packSequence(seq.toString()), seq.length() };
 				readInfo.add(o);
 			}
 			buf.close();
-			
+
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		reportFinish();
 
 		return readInfo;
 
+	}
+
+	private static void reportFinish() {
+		progress.set(0);
+		lastProgress = 0;
+		System.out.print(100 + "%\n");
+	}
+
+	private static void reportProgress(int delta) {
+		progress.getAndAdd(delta);
+		int p = ((int) ((((double) progress.get() / (double) maxProgress)) * 100) / 10) * 10;
+		if (p > lastProgress && p < 100) {
+			lastProgress = p;
+			System.out.print(p + "% ");
+		}
 	}
 
 	private static byte[] packSequence(String dna) {

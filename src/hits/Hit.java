@@ -2,17 +2,21 @@ package hits;
 
 import java.util.ArrayList;
 
+import maf.MAF_Hit;
+
 public class Hit {
 
 	public enum FrameDirection {
 		POSITIVE, NEGATIVE
 	}
 
+	private String readName;
+	private int totalQueryLenth;
+	private byte[] packedQuerySequence;
 	private FrameDirection frame;
 	private int rawScore, ref_start, query_start;
 
 	private int subjectID = -1;
-	private int readID = -1;
 
 	public ArrayList<Byte> editOperations;
 
@@ -22,11 +26,10 @@ public class Hit {
 		this.ref_start = ref_start;
 		this.query_start = query_start;
 		this.subjectID = subjectID;
-		this.readID = readID;
 		this.editOperations = editOperations;
 	}
 
-	public Hit(int id, int ref_start, int ref_end, int bitScore, int rawScore, long file_pointer, Integer accessPoint, int query_start,
+	public Hit(int ref_start, int ref_end, int bitScore, int rawScore, long file_pointer, Integer accessPoint, int query_start,
 			int ref_length, int query_length, int subjectID) {
 		this.ref_start = new Integer(ref_start);
 		this.query_start = new Integer(query_start);
@@ -40,6 +43,18 @@ public class Hit {
 		this.query_start = new Integer(h.getQuery_start());
 		this.subjectID = new Integer(h.getSubjectID());
 		this.frame = h.getFrame();
+	}
+
+	public Hit(MAF_Hit mafHit) {
+		this.frame = mafHit.getFrameDir();
+		this.rawScore = mafHit.getRawScore();
+		this.ref_start = mafHit.getRefStart();
+		this.query_start = mafHit.getQueryStart();
+		this.subjectID = mafHit.getSubjectID();
+		this.editOperations = mafHit.getEditOperations();
+		this.readName = mafHit.getReadName();
+		this.totalQueryLenth = mafHit.getTotalQueryLenth();
+		this.packedQuerySequence = mafHit.getPackedQuerySequence();		
 	}
 
 	public int getRef_start() {
@@ -77,16 +92,23 @@ public class Hit {
 	public ArrayList<Byte> getEditOperations() {
 		return editOperations;
 	}
+	
+	public String getReadName() {
+		return readName;
+	}
 
-	public int getReadID() {
-		return readID;
+	public int getTotalQueryLenth() {
+		return totalQueryLenth;
+	}
+
+	public byte[] getPackedQuerySequence() {
+		return packedQuerySequence;
 	}
 
 	// FOR DEBUGGING ***********************************
 
 	public void print(String prefix) {
-		System.out.println(prefix + " " + "\tQB:[" + query_start + ", ? ]\tRB:[" + ref_start + ", ? ]\tRS: " + rawScore
-				+ "\tFR: " + frame);
+		System.out.println(prefix + " " + "\tQB:[" + query_start + ", ? ]\tRB:[" + ref_start + ", ? ]\tRS: " + rawScore + "\tFR: " + frame);
 	}
 
 	public String toString() {

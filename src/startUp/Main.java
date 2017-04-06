@@ -1,12 +1,8 @@
 package startUp;
 
 import java.io.File;
-import java.util.ArrayList;
 
-import daa.writer.DAA_Writer;
-import hits.Hit;
-import maf.MAF_Header;
-import maf.MAF_Reader;
+import maf.MAF_Converter;
 
 public class Main {
 
@@ -15,6 +11,7 @@ public class Main {
 		File mafFile = null;
 		File queryFile = null;
 		File daaFile = null;
+		int cores = Runtime.getRuntime().availableProcessors();
 		for (int i = 0; i < args.length; i++) {
 			String option = args[i];
 			switch (option) {
@@ -26,7 +23,14 @@ public class Main {
 				}
 				i++;
 				break;
-
+			case "-p":
+				try {
+					cores = Integer.parseInt(args[i + 1]);
+				} catch (Exception e) {
+					System.err.print("ERROR: not an integer " + (args[i + 1]));
+				}
+				i++;
+				break;
 			case "-q":
 				try {
 					queryFile = new File(args[i + 1]);
@@ -51,6 +55,7 @@ public class Main {
 			System.out.println("-m\t" + "path to MAF-File");
 			System.out.println("-q\t" + "path to query-file (FASTA/FASTQ)");
 			System.out.println("optional: ");
+			System.out.println("-p\t" + "number of available processors");
 			System.out.println("-d\t" + "path to daa-file");
 			System.exit(0);
 		}
@@ -60,14 +65,7 @@ public class Main {
 			daaFilePath = daaFilePath.concat(split[i]);
 		daaFile = daaFile != null ? daaFile : new File(daaFilePath + ".daa");
 
-		Object[] result = MAF_Reader.run(mafFile, queryFile);
-
-		DAA_Writer daaWriter = new DAA_Writer(daaFile);
-		MAF_Header header = (MAF_Header) result[0];
-		daaWriter.writeHeader(header.getDbSeqs(), header.getDbLetters(), header.getGapOpen(), header.getGapExtend(), header.getK(),
-				header.getLambda());
-		daaWriter.writeHits((ArrayList<Hit>) result[1], (ArrayList<Object[]>) result[2]);
-		daaWriter.writeEnd((ArrayList<Object[]>) result[3]);
+		new MAF_Converter().run(daaFile, mafFile, queryFile, cores);
 
 	}
 

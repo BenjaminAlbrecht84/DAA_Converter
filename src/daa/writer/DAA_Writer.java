@@ -102,20 +102,20 @@ public class DAA_Writer {
 
 	}
 
-	public void writeHits(ArrayList<Hit> hits, ArrayList<Object[]> readInfo) {
+	public void writeHits(ArrayList<Hit> hits) {
 
 		ArrayList<Byte> byteBuffer = new ArrayList<Byte>();
 		HashMap<String, byte[]> readIDToPackedSeq = new HashMap<String, byte[]>();
 
 		Vector<int[]> allocPairs = new Vector<int[]>();
-		Integer lastReadID = null;
+		String lastReadName = null;
 		int begin = -1, alloc = -1;
 
 		for (Hit h : hits) {
 
-			String readName = ((SparseString) readInfo.get(h.getReadID())[0]).toString();
+			String readName = h.getReadName();
 
-			if (lastReadID == null || h.getReadID() != lastReadID) {
+			if (lastReadName == null || !h.getReadName().equals(lastReadName)) {
 
 				if (alloc != -1) {
 					alloc = byteBuffer.size() - 4 - begin;
@@ -128,7 +128,7 @@ public class DAA_Writer {
 				alloc = 0;
 				write(byteBuffer, readLittleEndian(alloc));
 
-				int totalQueryLength = (int) readInfo.get(h.getReadID())[2];
+				int totalQueryLength = h.getTotalQueryLenth();
 				write(byteBuffer, readLittleEndian(totalQueryLength));
 
 				String queryName = readName;
@@ -139,7 +139,7 @@ public class DAA_Writer {
 				write(byteBuffer, nFlag);
 
 				if (!readIDToPackedSeq.containsKey(queryName)) {
-					byte[] packedSequence = (byte[]) readInfo.get(h.getReadID())[1];
+					byte[] packedSequence = h.getPackedQuerySequence();
 					readIDToPackedSeq.put(queryName, packedSequence);
 				}
 				byte[] packedSequence = readIDToPackedSeq.get(readName);
@@ -170,7 +170,7 @@ public class DAA_Writer {
 				write(byteBuffer, op);
 			write(byteBuffer, (byte) 0);
 
-			lastReadID = h.getReadID();
+			lastReadName = h.getReadName();
 
 		}
 

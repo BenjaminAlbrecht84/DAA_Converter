@@ -169,11 +169,9 @@ public class DAA_Reader {
 								String queryName = hit.getQueryName();
 								String[] id_split = mySplit(queryName, ':');
 								String read_id = id_split[0];
-								int read_num = id_split.length == 1 ? 0 : Integer.parseInt(id_split[id_split.length - 1]);
-								read_num = frame < 0 ? -read_num : read_num;
 
 								// initializing hit
-								Hit h = new Hit(read_num, ref_start, ref_end, bitScore, rawScore, pointer, accessPoint, query_start, ref_length,
+								Hit h = new Hit(ref_start, ref_end, bitScore, rawScore, pointer, accessPoint, query_start, ref_length,
 										query_length, subjectID);
 								h.setFrame(frame);
 

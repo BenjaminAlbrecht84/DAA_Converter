@@ -78,7 +78,7 @@ public class DAA_Hit {
 		queryLength = 0;
 		refLength = 0;
 		Vector<Integer> v = new Vector<Integer>();
-		String aaString = new AA_Alphabet().getAaString();
+		String aaString = AA_Alphabet.getAaString();
 		int op = buffer.get() & 0xFF;
 		while (op != 0) {
 			switch (op >>> 6) {
@@ -110,7 +110,7 @@ public class DAA_Hit {
 		}
 		editOperations = v.toArray(new Integer[v.size()]);
 
-		if (parseAlignment) 
+		if (parseAlignment)
 			alignment = computeAlignment();
 
 	}
@@ -120,7 +120,7 @@ public class DAA_Hit {
 		StringBuffer[] bufs = { new StringBuffer(), new StringBuffer() };
 
 		// String aaString = "ARNDCQEGHILKMFPSTWYVBJZX*";
-		String aaString = new AA_Alphabet().getAaString();
+		String aaString = AA_Alphabet.getAaString();
 		String queryDNA = getQueryDNA();
 		// String queryAA = new CodonTranslator().translate(queryDNA);
 		CodonTranslator aaTranslator = new CodonTranslator();
