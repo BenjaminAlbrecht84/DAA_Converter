@@ -4,12 +4,21 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipException;
 
 public class LineCounter {
-	
+
 	public static int run(File file) {
 		try {
-			InputStream is = new BufferedInputStream(new FileInputStream(file));
+			
+			InputStream is;
+			try {
+				is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(file)));
+			} catch (ZipException e) {
+				is = new BufferedInputStream(new FileInputStream(file));
+			}
+			
 			try {
 				byte[] c = new byte[1024];
 				int count = 0;

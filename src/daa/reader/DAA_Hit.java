@@ -39,7 +39,7 @@ public class DAA_Hit {
 		this.filePointer = filePointer;
 		totalQueryLength = buffer.getInt();
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		int b;
 		while ((b = buffer.get()) != 0)
 			buf = buf.append((char) b);
@@ -117,7 +117,7 @@ public class DAA_Hit {
 
 	public String[] computeAlignment() {
 
-		StringBuffer[] bufs = { new StringBuffer(), new StringBuffer() };
+		StringBuilder[] bufs = { new StringBuilder(), new StringBuilder() };
 
 		// String aaString = "ARNDCQEGHILKMFPSTWYVBJZX*";
 		String aaString = AA_Alphabet.getAaString();
@@ -131,38 +131,38 @@ public class DAA_Hit {
 			case (0): // handling match
 				for (int i = 0; i < (editOp & 63); i++) {
 					char aa = aaTranslator.translateCodon(queryDNA.substring(q, q + 3));
-					bufs[0] = bufs[0].append(aa);
-					bufs[1] = bufs[1].append(aa);
+					bufs[0].append(aa);
+					bufs[1].append(aa);
 					q += 3;
 				}
 				break;
 			case (1): // handling insertion
 				for (int i = 0; i < (editOp & 63); i++) {
 					char aa = aaTranslator.translateCodon(queryDNA.substring(q, q + 3));
-					bufs[0] = bufs[0].append(aa);
-					bufs[1] = bufs[1].append('-');
+					bufs[0].append(aa);
+					bufs[1].append('-');
 					q += 3;
 				}
 				break;
 			case (2): // handling deletion
 				char c = aaString.charAt(editOp & 63);
-				bufs[0] = bufs[0].append('-');
-				bufs[1] = bufs[1].append(c);
+				bufs[0].append('-');
+				bufs[1].append(c);
 				break;
 			case (3): // handling substitution
 				c = aaString.charAt(editOp & 63);
 				if (c == '/') {
-					bufs[0] = bufs[0].append("/");
-					bufs[1] = bufs[1].append("-");
+					bufs[0].append("/");
+					bufs[1].append("-");
 					q -= 1;
 				} else if (c == '\\') {
-					bufs[0] = bufs[0].append("\\");
-					bufs[1] = bufs[1].append("-");
+					bufs[0].append("\\");
+					bufs[1].append("-");
 					q += 1;
 				} else {
 					char aa = aaTranslator.translateCodon(queryDNA.substring(q, q + 3));
-					bufs[0] = bufs[0].append(aa);
-					bufs[1] = bufs[1].append(c);
+					bufs[0].append(aa);
+					bufs[1].append(c);
 					q += 3;
 				}
 				break;
@@ -188,7 +188,7 @@ public class DAA_Hit {
 	}
 
 	private String reverseComplementString(String s) {
-		String rev = new StringBuffer(s).reverse().toString();
+		String rev = new StringBuilder(s).reverse().toString();
 		String revComp = rev.replace("A", "t").replace("T", "a").replace("C", "g").replace("G", "c").toUpperCase();
 		return revComp;
 	}

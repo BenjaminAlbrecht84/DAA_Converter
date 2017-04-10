@@ -2,11 +2,15 @@ package io;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipException;
 
 import util.LineCounter;
 import util.SparseString;
@@ -31,10 +35,17 @@ public class FastAQ_Reader {
 		try {
 
 			maxProgress = (int) LineCounter.run(fastAQFile);
-			BufferedReader buf = new BufferedReader(new FileReader(fastAQFile));
+
+			BufferedReader buf;
+			try {
+				buf = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(fastAQFile))));
+			} catch (ZipException e) {
+				buf = new BufferedReader(new FileReader(fastAQFile));
+			}
+
 			String line, id = "";
 			boolean readSequence = false;
-			StringBuffer seq = new StringBuffer("");
+			StringBuilder seq = new StringBuilder("");
 			int lineCounter = 0;
 			while ((line = buf.readLine()) != null) {
 
@@ -47,13 +58,13 @@ public class FastAQ_Reader {
 						Object[] o = { new SparseString(id), packSequence(seq.toString()), seq.length() };
 						readInfo.add(o);
 					}
-					seq = new StringBuffer("");
+					seq = new StringBuilder("");
 					id = line.substring(1).split(" ")[0];
 					readSequence = true;
 				} else if (line.startsWith("+")) {
 					readSequence = false;
 				} else if (readSequence) {
-					seq = seq.append(line);
+					seq.append(line);
 				}
 
 			}

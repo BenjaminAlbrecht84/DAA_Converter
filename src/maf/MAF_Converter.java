@@ -12,6 +12,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipException;
 
 import daa.writer.DAA_Writer;
 import hits.Hit;
@@ -27,7 +29,7 @@ public class MAF_Converter {
 	private CountDownLatch latch;
 	private ExecutorService executor;
 
-	public void run(File daaFile, File mafFile, File queryFile, int cores) {
+	public void run(File daaFile, File mafFile, File queryFile, int cores, boolean verbose) {
 
 		long time = System.currentTimeMillis();
 		System.out.println("MAF2DAA converter by Benjamin Albrecht");
@@ -40,24 +42,28 @@ public class MAF_Converter {
 		long chunk = (long) Math.ceil((double) numOfLines / (double) cores);
 
 		// processing maf file
-		System.out.println("Processing maf-file: " + mafFile.getAbsolutePath());
+		System.out.println("STEP 1 - Processing maf-file: " + mafFile.getAbsolutePath());
 		maxProgress = (int) numOfLines;
 		ConcurrentSkipListSet<SubjectEntry> subjectInfoSet = new ConcurrentSkipListSet<SubjectEntry>();
 		ConcurrentSkipListSet<Long> batchSet = new ConcurrentSkipListSet<Long>();
 		ArrayList<Thread> processThreads = generateProcessThreads(mafFile, chunk, subjectInfoSet, batchSet);
 		runInParallel(processThreads);
-		ArrayList<Object[]> subjectInfo = new ArrayList<Object[]>();
+		ArrayList<Object[]> subjectInfos = new ArrayList<Object[]>();
 		Iterator<SubjectEntry> it = subjectInfoSet.iterator();
 		while (it.hasNext()) {
 			SubjectEntry e = it.next();
 			Object[] subject = { e.getName(), e.getLength() };
-			subjectInfo.add(subject);
+			subjectInfos.add(subject);
 		}
 		reportFinish();
+		if (verbose)
+			System.out.println(subjectInfos.size() + " references processed!");
 
 		// parsing read information
-		System.out.println("Processing read-file: " + queryFile.getAbsolutePath());
+		System.out.println("STEP 2 - Processing read-file: " + queryFile.getAbsolutePath());
 		ArrayList<Object[]> readInfos = FastAQ_Reader.read(queryFile);
+		if (verbose)
+			System.out.println(readInfos.size() + " reads processed!");
 
 		// writing header of daa file
 		DAA_Writer daaWriter = new DAA_Writer(daaFile);
@@ -67,11 +73,12 @@ public class MAF_Converter {
 		// writing hits into daa file
 		maxProgress = (int) numOfLines;
 		progress.set(0);
-		System.out.println("Writing into daa-file: " + daaFile.getAbsolutePath());
+		System.out.println("STEP 3 - Writing into daa-file: " + daaFile.getAbsolutePath());
 		ArrayList<Thread> batchReaders = new ArrayList<Thread>();
 		for (long filePointer : batchSet)
-			batchReaders.add(new BatchReader(filePointer, mafFile, subjectInfo));
+			batchReaders.add(new BatchReader(filePointer, mafFile, subjectInfos));
 		ArrayList<Hit> hits = new ArrayList<Hit>();
+		long hitCounter = 0;
 		for (int i = 0; i < readInfos.size(); i++) {
 
 			Object[] readInfo = readInfos.get(i);
@@ -89,6 +96,7 @@ public class MAF_Converter {
 
 			// writing hits into daa file
 			if (hits.size() > 10000 || i == readInfos.size() - 1) {
+				hitCounter += hits.size();
 				daaWriter.writeHits(hits);
 				hits.clear();
 			}
@@ -96,9 +104,11 @@ public class MAF_Converter {
 		}
 
 		// writing subject info into daa file
-		daaWriter.writeEnd(subjectInfo);
-
+		daaWriter.writeEnd(subjectInfos);
+		
 		reportFinish();
+		if (verbose)
+			System.out.println(hitCounter + " alignments written into DAA-File!");
 
 		executor.shutdown();
 
@@ -138,6 +148,14 @@ public class MAF_Converter {
 
 		public BatchReader(long filePointer, File mafFile, ArrayList<Object[]> subjectInfo) {
 			try {
+
+				InputStream is;
+				try {
+					is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(mafFile)));
+				} catch (ZipException e) {
+					is = new BufferedInputStream(new FileInputStream(mafFile));
+				}
+
 				raf = new RandomAccessFile(mafFile, "r");
 				raf.seek(filePointer);
 				readChars = raf.read(buffer);
@@ -168,14 +186,14 @@ public class MAF_Converter {
 
 			try {
 
-				StringBuffer line = new StringBuffer();
+				StringBuilder line = new StringBuilder();
 				String[] lineTriple = new String[3];
 				for (int i = last_i; i < readChars; i++) {
 
 					char c = (char) buffer[i];
 
 					if (c != '\n')
-						line = line.append(c);
+						line.append(c);
 					else {
 
 						parsedLines++;
@@ -184,7 +202,7 @@ public class MAF_Converter {
 
 						last_i = i + 1;
 						String l = line.toString();
-						line = new StringBuffer();
+						line = new StringBuilder();
 
 						if (l.startsWith("#")) {
 							endOfBatchReached = true;
@@ -280,8 +298,8 @@ public class MAF_Converter {
 				byte[] buffer = new byte[1024 * 1024];
 				int readChars = 0, colNumber = 0, parsedLines = 0;
 				boolean b1 = false, b2 = false, b3 = false, b4 = false;
-				StringBuffer buf = new StringBuffer();
-				StringBuffer line = new StringBuffer();
+				StringBuilder buf = new StringBuilder();
+				StringBuilder line = new StringBuilder();
 				Object[] subject = new Object[2];
 				while ((readChars = raf.read(buffer)) != -1) {
 
@@ -310,8 +328,8 @@ public class MAF_Converter {
 								batchSet.add(raf.getFilePointer() - (readChars - i));
 								b4 = false;
 							}
-							buf = new StringBuffer();
-							line = new StringBuffer();
+							buf = new StringBuilder();
+							line = new StringBuilder();
 							colNumber = 0;
 							break;
 						case ' ':
@@ -335,14 +353,14 @@ public class MAF_Converter {
 								}
 								if (b2 && colNumber == 5)
 									subject[1] = Integer.parseInt(buf.toString());
-								buf = new StringBuffer();
-								line = line.append(c);
+								buf = new StringBuilder();
+								line.append(c);
 								colNumber++;
 							}
 							break;
 						default:
-							buf = buf.append(c);
-							line = line.append(c);
+							buf.append(c);
+							line.append(c);
 						}
 
 					}
@@ -366,7 +384,14 @@ public class MAF_Converter {
 
 		ArrayList<Thread> processThreads = new ArrayList<Thread>();
 		try {
-			InputStream is = new BufferedInputStream(new FileInputStream(file));
+
+			InputStream is;
+			try {
+				is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(file)));
+			} catch (ZipException e) {
+				is = new BufferedInputStream(new FileInputStream(file));
+			}
+
 			try {
 				byte[] c = new byte[1024];
 				int count = 0;
