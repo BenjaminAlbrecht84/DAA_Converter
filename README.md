@@ -12,12 +12,23 @@ Get the current version frome [here](https://github.com/BenjaminAlbrecht84/DAA_C
  
 Parameter | Description
 --------- | -----------
--m  | path to MAF-File
--q  | path to query-file (FASTA/FASTQ)
+-m  | path to MAF-File (can be also be piped-in, no gzip allowed)
+-q  | path to query-file in FASTA or FASTQ format (can also be gzipped)
 
-### optional: 
+### Optional: 
 
 Parameter | Description
 --------- | -----------
--d  | path to DAA-File
--p  | number of available processors
+-d  | path of the reported DAA-file (default: source folder with name of the MAF-file)
+-p  | number of available processors (default: maximal number)
+-v  | sets verbose mode for reporting numbers of reads/references/alignments being analyzed
+
+### Example:
+
+Either the MAF-file is directly specfied, like
+
+``java -jar DAA_Converter.jar -m <maf-file> -q <read-file>``
+
+or the MAF-file is piped in from LAST, like
+
+``lastal -F15 <last-db> <read-file> | java -jar DAA_Converter.jar  -q <read-file>``
