@@ -107,6 +107,60 @@ public class DAA_Reader {
 		}
 	}
 
+	public Object[] parseDAAHitByIndex(int index, Integer lastIndex, Long lastFilePointer) {
+
+		ArrayList<DAA_Hit> daaHits = new ArrayList<DAA_Hit>();
+
+		try {
+
+			RandomAccessFile raf = new RandomAccessFile(daaFile, "r");
+			raf.seek(header.getLocationOfBlockInFile(header.getAlignmentsBlockIndex()));
+
+			int start = lastIndex != null ? lastIndex : 0;
+			if (lastFilePointer != null)
+				raf.seek(lastFilePointer);
+			int lastIteration = 0;
+			long filePointer = raf.getFilePointer();
+			for (int i = start; i < header.getNumberOfQueryRecords(); i++) {
+
+				lastIteration = i;
+				filePointer = raf.getFilePointer();
+
+				ByteBuffer buffer = ByteBuffer.allocate(4);
+				buffer.order(ByteOrder.LITTLE_ENDIAN);
+				raf.read(buffer.array());
+				int alloc = buffer.getInt();
+
+				ByteBuffer hitBuffer = ByteBuffer.allocate(alloc);
+				hitBuffer.order(ByteOrder.LITTLE_ENDIAN);
+				raf.read(hitBuffer.array());
+
+				if (i == index) {
+					DAA_Hit hit = new DAA_Hit();
+					hit.parseQueryProperties(filePointer, hitBuffer, false, true);
+					while (hitBuffer.position() < hitBuffer.capacity()) {
+						hit.parseHitProperties(header, hitBuffer, false);
+						daaHits.add(hit);
+					}
+					break;
+				}
+
+			}
+
+			raf.close();
+			Object[] result = { daaHits, lastIteration, filePointer };
+			return result;
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		Object[] result = { daaHits, null, null };
+		return result;
+
+	}
+
 	public class DAA_Parser extends Thread {
 
 		private int[] bounds;
@@ -143,7 +197,7 @@ public class DAA_Reader {
 						if (i >= bounds[0] && i < bounds[1]) {
 
 							// parsing query properties
-							hit.parseQueryProperties(filePointer, hitBuffer, false);
+							hit.parseQueryProperties(filePointer, hitBuffer, false, false);
 
 							while (hitBuffer.position() < hitBuffer.capacity()) {
 
@@ -171,8 +225,8 @@ public class DAA_Reader {
 								String read_id = id_split[0];
 
 								// initializing hit
-								Hit h = new Hit(ref_start, ref_end, bitScore, rawScore, pointer, accessPoint, query_start, ref_length,
-										query_length, subjectID);
+								Hit h = new Hit(ref_start, ref_end, bitScore, rawScore, pointer, accessPoint, query_start, ref_length, query_length,
+										subjectID);
 								h.setFrame(frame);
 
 								// storing hit
@@ -242,7 +296,7 @@ public class DAA_Reader {
 
 			// parsing query properties
 			hit = new DAA_Hit();
-			hit.parseQueryProperties(filePointer, hitBuffer, true);
+			hit.parseQueryProperties(filePointer, hitBuffer, true, false);
 
 			hitBuffer.position(accessPoint);
 

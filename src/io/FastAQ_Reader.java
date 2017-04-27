@@ -12,6 +12,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipException;
 
+import javax.xml.stream.events.Characters;
+
 import util.LineCounter;
 import util.SparseString;
 
@@ -27,6 +29,10 @@ public class FastAQ_Reader {
 		nucToIndex.put('C', 1);
 		nucToIndex.put('G', 2);
 		nucToIndex.put('T', 3);
+		nucToIndex.put('a', 0);
+		nucToIndex.put('c', 1);
+		nucToIndex.put('g', 2);
+		nucToIndex.put('t', 3);
 	}
 
 	public static ArrayList<Object[]> read(File fastAQFile) {
@@ -99,14 +105,15 @@ public class FastAQ_Reader {
 		}
 	}
 
-	private static byte[] packSequence(String dna) {
+	public static byte[] packSequence(String dna) {
 
 		Vector<Byte> packed = new Vector<Byte>();
 		byte p = 0;
 		for (int i = 0; i < dna.length(); i++) {
 			char c = dna.charAt(i);
 			byte b = 0;
-			b |= nucToIndex.get(c) << (i * 2) % 8;
+			int dnaIndex = nucToIndex.containsKey(c) ? nucToIndex.get(c) : 0;
+			b |= dnaIndex << (i * 2) % 8;
 			p |= b;
 			if (i == dna.length() - 1 || (((i + 1) * 2) % 8 == 0 && i != 0)) {
 				packed.add(p);

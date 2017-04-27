@@ -3,6 +3,7 @@ package daa.reader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Vector;
 
 import util.AA_Alphabet;
@@ -18,6 +19,7 @@ public class DAA_Hit {
 	private int queryStart;
 	private int queryLength;
 
+	private byte[] packedQuerySequence;
 	private byte[] totalQuerySequence;
 
 	// reference properties
@@ -31,10 +33,11 @@ public class DAA_Hit {
 	// hit properties
 	private int rawScore, bitScore;
 	private int frame;
+	private ArrayList<Byte> editByteOperations;
 	private Integer[] editOperations;
 	private String[] alignment;
 
-	public void parseQueryProperties(long filePointer, ByteBuffer buffer, boolean parseAlignment) {
+	public void parseQueryProperties(long filePointer, ByteBuffer buffer, boolean parseAlignment, boolean storePackedDNASequence) {
 
 		this.filePointer = filePointer;
 		totalQueryLength = buffer.getInt();
@@ -54,6 +57,9 @@ public class DAA_Hit {
 		byte[] packed = new byte[(totalQueryLength * bits + 7) / 8];
 		buffer.get(packed);
 
+		if (storePackedDNASequence)
+			packedQuerySequence = packed;
+
 		if (parseAlignment)
 			totalQuerySequence = getUnpackedSequence(packed, totalQueryLength, bits);
 
@@ -62,7 +68,6 @@ public class DAA_Hit {
 	public void parseHitProperties(DAA_Header header, ByteBuffer buffer, boolean parseAlignment) throws IOException {
 
 		subjectID = buffer.getInt();
-
 		int flag = buffer.get() & 0xFF;
 
 		rawScore = readPacked(flag & 3, buffer);
@@ -78,8 +83,10 @@ public class DAA_Hit {
 		queryLength = 0;
 		refLength = 0;
 		Vector<Integer> v = new Vector<Integer>();
+		ArrayList<Byte> vByte = new ArrayList<Byte>();
 		String aaString = AA_Alphabet.getAaString();
-		int op = buffer.get() & 0xFF;
+		byte opByte = buffer.get();
+		int op = opByte & 0xFF;
 		while (op != 0) {
 			switch (op >>> 6) {
 			case (0): // handling match
@@ -94,11 +101,11 @@ public class DAA_Hit {
 				break;
 			case (3): // handling substitution
 				char c = aaString.charAt(op & 63);
-				if (c == '/')
+				if (c == '/') {
 					queryLength -= 1;
-				else if (c == '\\')
+				} else if (c == '\\') {
 					queryLength += 1;
-				else {
+				} else {
 					queryLength += 3;
 					refLength += 1;
 				}
@@ -106,9 +113,12 @@ public class DAA_Hit {
 
 			}
 			v.add(op);
-			op = buffer.get() & 0xFF;
+			vByte.add(opByte);
+			opByte = buffer.get();
+			op = opByte & 0xFF;
 		}
 		editOperations = v.toArray(new Integer[v.size()]);
+		editByteOperations = vByte;
 
 		if (parseAlignment)
 			alignment = computeAlignment();
@@ -122,7 +132,6 @@ public class DAA_Hit {
 		// String aaString = "ARNDCQEGHILKMFPSTWYVBJZX*";
 		String aaString = AA_Alphabet.getAaString();
 		String queryDNA = getQueryDNA();
-		// String queryAA = new CodonTranslator().translate(queryDNA);
 		CodonTranslator aaTranslator = new CodonTranslator();
 
 		int q = 0;
@@ -183,7 +192,7 @@ public class DAA_Hit {
 		case 2:
 			return buffer.getInt();
 		default:
-			throw new RuntimeException("unknown kind");
+			throw new RuntimeException("unknown kind: " + kind);
 		}
 	}
 
@@ -199,6 +208,10 @@ public class DAA_Hit {
 		int start = frame > 0 ? queryStart : totalQueryLength - queryStart - 1;
 		String queryDNA = (String) querySeq.subSequence(start, start + queryLength);
 		return queryDNA;
+	}
+
+	public byte[] getPackedQuerySequence() {
+		return packedQuerySequence;
 	}
 
 	public String getTotalQueryDNA() {
@@ -286,6 +299,10 @@ public class DAA_Hit {
 
 	public String[] getAlignment() {
 		return alignment;
+	}
+
+	public ArrayList<Byte> getEditByteOperations() {
+		return editByteOperations;
 	}
 
 }

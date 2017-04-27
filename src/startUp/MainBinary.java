@@ -1,15 +1,17 @@
 package startUp;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.InputStreamReader;
+import java.util.ArrayList;
 
 import maf.MAF_Converter;
+import maf.MAF_StreamConverter;
+import maf.MAF_Streamer;
 
-public class Main {
+public class MainBinary {
 
 	public static void main(String[] args) {
+		
+		System.out.println("MAF2DAA converter by Benjamin Albrecht");
 
 		File mafFile = null;
 		File queryFile = null;
@@ -59,70 +61,49 @@ public class Main {
 
 		}
 
-		if (mafFile == null)
-			mafFile = readFromInputStream();
+		Object[] streamResults = null;
+		if (mafFile == null){
+			System.out.println("No MAF-File specified, now processing input stream...");
+			streamResults = new MAF_Streamer(queryFile, cores, verbose).processInputStream();
+		}
 
-		if (mafFile == null || queryFile == null) {
+		if (queryFile == null || (mafFile == null && streamResults == null)) {
 			System.out.println("Mandatory Options: ");
 			System.out.println("-m\t" + "path to MAF-File (can be also be piped-in, no gzip allowed)");
 			System.out.println("-q\t" + "path to query-file in FASTA or FASTQ format (can also be gzipped)");
 			System.out.println("Optional: ");
 			System.out.println("-p\t" + "number of available processors (default: maximal number)");
-			System.out.println("-d\t" + "path of the reported DAA-file (default: source folder with name of the MAF-file)");
+			System.out.println("-d\t" + "path of the reported DAA-file (default: same name and folder as the query-file)");
 			System.out.println("-v\t" + "sets verbose mode reporting numbers of reads/references/alignments being analyzed)");
 			System.exit(0);
 		}
 
-		String[] split = mafFile.getAbsolutePath().split("\\.");
+		String[] split = queryFile.getAbsolutePath().split("\\.");
 		String daaFilePath = "";
 		for (int i = 0; i < split.length - 1; i++)
 			daaFilePath = daaFilePath.concat(split[i]);
 		daaFile = daaFile != null ? daaFile : new File(daaFilePath + ".daa");
 
-		new MAF_Converter().run(daaFile, mafFile, queryFile, cores, verbose, null);
+		if (streamResults != null) {
+			new MAF_StreamConverter().run(daaFile, (ArrayList<File>) streamResults[1], queryFile, cores, verbose, (File) streamResults[0]);
+			deleteDir((File) streamResults[2]);
+		}
+		if (mafFile != null)
+			new MAF_Converter().run(daaFile, mafFile, queryFile, cores, verbose, null);
 
 	}
 
-	private static File readFromInputStream() {
-
-		File mafFile = new File("./lastOutput.maf");
-		StringBuilder build = new StringBuilder();
-		BufferedReader buf = new BufferedReader(new InputStreamReader(System.in));
-		boolean firstWrite = true;
-		try {
-			try {
-				int lineCounter = 0;
-				String l;
-				while ((l = buf.readLine()) != null) {
-					build.append(l + "\n");
-					if (++lineCounter > 1000) {
-						writeFile(build.toString(), mafFile, !firstWrite);
-						build = new StringBuilder();
-						firstWrite = false;
-					}
+	private static boolean deleteDir(File dir) {
+		if (dir.isDirectory()) {
+			String[] children = dir.list();
+			for (int i = 0; i < children.length; i++) {
+				boolean success = deleteDir(new File(dir, children[i]));
+				if (!success) {
+					return false;
 				}
-				if (build.length() > 0)
-					writeFile(build.toString(), mafFile, !firstWrite);
-
-			} finally {
-				buf.close();
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
-
-		return mafFile;
-
-	}
-
-	private static void writeFile(String output, File file, boolean append) {
-		try {
-			FileWriter writer = new FileWriter(file, append);
-			writer.write(output);
-			writer.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		return dir.delete();
 	}
 
 }

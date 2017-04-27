@@ -318,11 +318,48 @@ public class DAA_Writer {
 				output = new BufferedOutputStream(new FileOutputStream(out, append));
 				output.write(b, 0, len);
 			} finally {
-				output.close();
+				if (output != null)
+					output.close();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	public String getTotalQueryDNA(byte[] unpackedSequence) {
+		char[] sigma = { 'A', 'C', 'G', 'T' };
+		StringBuilder buf = new StringBuilder();
+		for (byte a : unpackedSequence) {
+			buf.append(sigma[a]);
+		}
+		return buf.toString();
+	}
+
+	public String toStringUnpacked(byte[] unpacked) {
+		StringBuilder buf = new StringBuilder();
+		for (byte a : unpacked)
+			buf.append(String.format("%d", a));
+		return buf.toString();
+	}
+
+	public static byte[] getUnpackedSequence(byte[] packed, int query_len, int bits) {
+		byte[] result = new byte[query_len];
+		long x = 0;
+		int n = 0, l = 0;
+		int mask = (1 << bits) - 1;
+
+		for (int i = 0; i < packed.length; i++) {
+			x |= (packed[i] & 0xFF) << n;
+			n += 8;
+
+			while (n >= bits && l < query_len) {
+				result[l] = (byte) (x & mask);
+				n -= bits;
+				x >>>= bits;
+				l++;
+			}
+		}
+		return result;
 	}
 
 }

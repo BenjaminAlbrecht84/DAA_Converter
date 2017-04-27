@@ -29,13 +29,13 @@ public class MAF_Converter {
 	private CountDownLatch latch;
 	private ExecutorService executor;
 
-	public void run(File daaFile, File mafFile, File queryFile, int cores, boolean verbose) {
+	public void run(File daaFile, File mafFile, File queryFile, int cores, boolean verbose, File headerFile) {
 
 		long time = System.currentTimeMillis();
-		System.out.println("MAF2DAA converter by Benjamin Albrecht");
+		System.out.println("\nConverting " + mafFile.getName() + " to " + daaFile.getName() + "...");
 
 		this.executor = Executors.newFixedThreadPool(cores);
-		MAF_Header headerInfo = new MAF_Header(mafFile);
+		MAF_Header headerInfo = headerFile == null ? new MAF_Header(mafFile) : new MAF_Header(headerFile);
 		headerInfo.load();
 
 		long numOfLines = LineCounter.run(mafFile);
@@ -105,7 +105,7 @@ public class MAF_Converter {
 
 		// writing subject info into daa file
 		daaWriter.writeEnd(subjectInfos);
-		
+
 		reportFinish();
 		if (verbose)
 			System.out.println(hitCounter + " alignments written into DAA-File!");
@@ -297,16 +297,20 @@ public class MAF_Converter {
 
 				byte[] buffer = new byte[1024 * 1024];
 				int readChars = 0, colNumber = 0, parsedLines = 0;
-				boolean b1 = false, b2 = false, b3 = false, b4 = false;
+				boolean b1 = false, b2 = false, b3 = false, b4 = false, doBreak = false;
+				;
 				StringBuilder buf = new StringBuilder();
 				StringBuilder line = new StringBuilder();
 				Object[] subject = new Object[2];
 				while ((readChars = raf.read(buffer)) != -1) {
 
-					if (parsedLines > chunkSize)
+					if (doBreak)
 						break;
 
 					for (int i = 0; i < readChars; i++) {
+
+						if (doBreak)
+							break;
 
 						char c = (char) buffer[i];
 						if (c == '\n') {
@@ -314,8 +318,6 @@ public class MAF_Converter {
 							if (parsedLines % 100 == 0)
 								reportProgress(100);
 						}
-						if (parsedLines > chunkSize)
-							break;
 
 						switch (c) {
 						case '\n':
@@ -323,6 +325,10 @@ public class MAF_Converter {
 								if (subject[0] != null && subject[1] != null)
 									subjectInfo_Set.add(new SubjectEntry((SparseString) subject[0], (int) subject[1]));
 								b2 = false;
+
+								if (parsedLines > chunkSize)
+									doBreak = true;
+
 							}
 							if (b4) {
 								batchSet.add(raf.getFilePointer() - (readChars - i));

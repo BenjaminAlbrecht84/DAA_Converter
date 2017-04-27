@@ -29,8 +29,8 @@ public class Hit {
 		this.editOperations = editOperations;
 	}
 
-	public Hit(int ref_start, int ref_end, int bitScore, int rawScore, long file_pointer, Integer accessPoint, int query_start,
-			int ref_length, int query_length, int subjectID) {
+	public Hit(int ref_start, int ref_end, int bitScore, int rawScore, long file_pointer, Integer accessPoint, int query_start, int ref_length,
+			int query_length, int subjectID) {
 		this.ref_start = new Integer(ref_start);
 		this.query_start = new Integer(query_start);
 		this.rawScore = new Integer(rawScore);
@@ -53,8 +53,8 @@ public class Hit {
 		this.subjectID = mafHit.getSubjectID();
 		this.editOperations = mafHit.getEditOperations();
 		this.readName = mafHit.getReadName();
-		this.totalQueryLenth = mafHit.getTotalQueryLenth();
-		this.packedQuerySequence = mafHit.getPackedQuerySequence();		
+		this.packedQuerySequence = mafHit.getPackedQuerySequence();
+		this.totalQueryLenth = mafHit.getTotalQueryLength();
 	}
 
 	public int getRef_start() {
@@ -92,7 +92,7 @@ public class Hit {
 	public ArrayList<Byte> getEditOperations() {
 		return editOperations;
 	}
-	
+
 	public String getReadName() {
 		return readName;
 	}

@@ -11,7 +11,7 @@ import util.SparseString;
 public class MAF_Hit {
 
 	private String readName;
-	private int totalQueryLenth;
+	private int totalQueryLength;
 	private byte[] packedQuerySequence;
 	private int rawScore;
 	private int subjectID;
@@ -24,7 +24,28 @@ public class MAF_Hit {
 		loadProperties(lineTriple, readInfo, subjectInfo);
 	}
 
+	public MAF_Hit(int rawScore, String subjectName, int refStart, String readName, int queryStart, int frame, ArrayList<Byte> editOperations,
+			ArrayList<Object[]> subjectInfo, byte[] packedQuerySequence, int totalQueryLength) {
+
+		this.rawScore = rawScore;
+		Object[] subject = { new SparseString(subjectName), null };
+		this.subjectID = Collections.binarySearch(subjectInfo, subject, new InfoComparator());
+		this.refStart = refStart;
+		this.readName = readName;
+		this.queryStart = queryStart;
+		this.frameDir = frame < 0 ? FrameDirection.NEGATIVE : FrameDirection.POSITIVE;
+		this.editOperations = editOperations;
+		this.packedQuerySequence = packedQuerySequence;
+		this.totalQueryLength = totalQueryLength;
+
+	}
+
 	public void loadProperties(String[] lineTriple, Object[] readInfo, ArrayList<Object[]> subjectInfo) {
+
+		if (lineTriple[0] == null) {
+			System.out.println(lineTriple[1]);
+			System.out.println(lineTriple[2]);
+		}
 
 		// parsing scoring parameters
 		String[] split = lineTriple[0].split("\\s+");
@@ -64,9 +85,9 @@ public class MAF_Hit {
 
 	public void setReadInfo(Object[] readInfo) {
 		packedQuerySequence = (byte[]) readInfo[1];
-		totalQueryLenth = (int) readInfo[2];
+		totalQueryLength = (int) readInfo[2];
 		if (frameDir == FrameDirection.NEGATIVE)
-			queryStart = totalQueryLenth - queryStart - 1;
+			queryStart = totalQueryLength - queryStart - 1;
 	}
 
 	public int getRawScore() {
@@ -101,12 +122,12 @@ public class MAF_Hit {
 		return readName;
 	}
 
-	public int getTotalQueryLenth() {
-		return totalQueryLenth;
-	}
-
 	public byte[] getPackedQuerySequence() {
 		return packedQuerySequence;
+	}
+
+	public int getTotalQueryLength() {
+		return totalQueryLength;
 	}
 
 	public boolean makesSense() {

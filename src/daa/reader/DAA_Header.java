@@ -9,6 +9,10 @@ import java.io.RandomAccessFile;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+
+import maf.MAF_StreamConverter.SubjectEntry;
+import util.SparseString;
 
 public class DAA_Header {
 
@@ -140,7 +144,7 @@ public class DAA_Header {
 				referenceNames = new byte[(int) dbSeqsUsed][];
 				referenceLocations = new long[1 + ((int) dbSeqsUsed >>> referenceLocationChunkBits)];
 				for (int i = 0; i < (int) dbSeqsUsed; i++) {
-					if ((i & (referenceLocationChunkSize - 1)) == 0){
+					if ((i & (referenceLocationChunkSize - 1)) == 0) {
 						referenceLocations[i >>> referenceLocationChunkBits] = raf.getFilePointer();
 					}
 					int c = raf.read();
@@ -232,10 +236,14 @@ public class DAA_Header {
 		return headerSize;
 	}
 
+	public long getDbSeqsUsed() {
+		return dbSeqsUsed;
+	}
+
 	public void print() {
 
 		System.out.println("DIAMOND HEADER *********************\n");
-		
+
 		System.out.println("Magic Number: " + this.magicNumber);
 		System.out.println("Version: " + this.version);
 
@@ -269,13 +277,13 @@ public class DAA_Header {
 			System.out.print((char) scoreMatrix[i]);
 
 		System.out.println();
-		for (int i = 0; i < blockSize.length; i++)		
+		for (int i = 0; i < blockSize.length; i++)
 			System.out.println("BlockSize-" + i + ": " + blockSize[i]);
-		
-		System.out.println("alignmentsBlockIndex: "+this.alignmentsBlockIndex+" "+blockSize[alignmentsBlockIndex]);
-		System.out.println("refNamesBlockIndex: "+this.refNamesBlockIndex+" "+blockSize[refNamesBlockIndex]);
-		System.out.println("refLengthsBlockIndex: "+this.refLengthsBlockIndex+" "+blockSize[refLengthsBlockIndex]);
-		
+
+		System.out.println("alignmentsBlockIndex: " + this.alignmentsBlockIndex + " " + blockSize[alignmentsBlockIndex]);
+		System.out.println("refNamesBlockIndex: " + this.refNamesBlockIndex + " " + blockSize[refNamesBlockIndex]);
+		System.out.println("refLengthsBlockIndex: " + this.refLengthsBlockIndex + " " + blockSize[refLengthsBlockIndex]);
+
 		System.out.println("**************************************\n");
 
 	}
