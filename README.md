@@ -19,7 +19,7 @@ Parameter | Description
 
 Parameter | Description
 --------- | -----------
--d  | path of the reported DAA-file (default: source folder with name of the MAF-file)
+-d  | path of the reported DAA-file (default: same name and folder as the query-file)
 -p  | number of available processors (default: maximal number)
 -v  | sets verbose mode for reporting numbers of reads/references/alignments being analyzed
 
@@ -31,4 +31,4 @@ Either the MAF-file is directly specfied, like
 
 or the MAF-file is piped in from LAST, like
 
-``lastal -F15 <last-db> <read-file> | java -jar DAA_Converter.jar  -q <read-file>``
+``lastal -P8 -F15 <last-db> <read-file> | java -jar DAA_Converter.jar  -q <read-file>``
