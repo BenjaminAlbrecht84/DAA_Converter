@@ -14,14 +14,16 @@ Parameter | Description
 --------- | -----------
 -m  | path to MAF-File (can be also be piped-in, no gzip allowed)
 -q  | path to query-file in FASTA or FASTQ format (can also be gzipped)
+-d  | path of the reported DAA-file 
 
 ### Optional: 
 
 Parameter | Description
 --------- | -----------
--d  | path of the reported DAA-file (default: same name and folder as the query-file)
 -p  | number of available processors (default: maximal number)
--v  | sets verbose mode for reporting numbers of reads/references/alignments being analyzed
+-ps | number of available processors while input is piped-in (default: 1)
+-t  | folder for temporary files (default: system's tmp folder)
+-v  | enables verbose mode for reporting numbers of reads/references/alignments being analyzed
 
 ### Example:
 

@@ -258,7 +258,6 @@ public class DAA_Writer {
 			for (Object[] o : subjectInfo) {
 				String refName = ((SparseString) o[0]).toString();
 				write(byteBuffer, readLittleEndian(refName));
-				// write(byteBuffer, readLittleEndian((int) 0));
 				write(byteBuffer, (byte) 0);
 			}
 			refNamesBlockSize.getAndSet(byteBuffer.size());
@@ -268,7 +267,6 @@ public class DAA_Writer {
 				int refLength = ((int) o[1]);
 				write(byteBuffer, readLittleEndian(refLength));
 			}
-			// write(byteBuffer, readLittleEndian((int) 0));
 			refLengthsBlockSize.getAndSet(byteBuffer.size() - refNamesBlockSize.get());
 
 			// writing-out buffer

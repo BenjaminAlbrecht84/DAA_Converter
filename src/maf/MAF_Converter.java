@@ -1,8 +1,10 @@
 package maf;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
@@ -38,15 +40,22 @@ public class MAF_Converter {
 		MAF_Header headerInfo = headerFile == null ? new MAF_Header(mafFile) : new MAF_Header(headerFile);
 		headerInfo.load();
 
+		long numOfLines_header = headerFile != null ? LineCounter.run(headerFile) : countHeaderLines(mafFile);
 		long numOfLines = LineCounter.run(mafFile);
 		long chunk = (long) Math.ceil((double) numOfLines / (double) cores);
 
+		// parsing read information
+		System.out.println("STEP 1 - Processing read-file: " + queryFile.getAbsolutePath());
+		ArrayList<Object[]> readInfos = FastAQ_Reader.read(queryFile);
+		if (verbose)
+			System.out.println(readInfos.size() + " reads processed!");
+
 		// processing maf file
-		System.out.println("STEP 1 - Processing maf-file: " + mafFile.getAbsolutePath());
+		System.out.println("STEP 2 - Processing maf-file: " + mafFile.getAbsolutePath());
 		maxProgress = (int) numOfLines;
 		ConcurrentSkipListSet<SubjectEntry> subjectInfoSet = new ConcurrentSkipListSet<SubjectEntry>();
 		ConcurrentSkipListSet<Long> batchSet = new ConcurrentSkipListSet<Long>();
-		ArrayList<Thread> processThreads = generateProcessThreads(mafFile, chunk, subjectInfoSet, batchSet);
+		ArrayList<Thread> processThreads = generateProcessThreads(mafFile, chunk, subjectInfoSet, batchSet, readInfos);
 		runInParallel(processThreads);
 		ArrayList<Object[]> subjectInfos = new ArrayList<Object[]>();
 		Iterator<SubjectEntry> it = subjectInfoSet.iterator();
@@ -59,21 +68,15 @@ public class MAF_Converter {
 		if (verbose)
 			System.out.println(subjectInfos.size() + " references processed!");
 
-		// parsing read information
-		System.out.println("STEP 2 - Processing read-file: " + queryFile.getAbsolutePath());
-		ArrayList<Object[]> readInfos = FastAQ_Reader.read(queryFile);
-		if (verbose)
-			System.out.println(readInfos.size() + " reads processed!");
-
 		// writing header of daa file
 		DAA_Writer daaWriter = new DAA_Writer(daaFile);
 		daaWriter.writeHeader(headerInfo.getDbSeqs(), headerInfo.getDbLetters(), headerInfo.getGapOpen(), headerInfo.getGapExtend(),
 				headerInfo.getK(), headerInfo.getLambda());
 
 		// writing hits into daa file
-		maxProgress = (int) numOfLines;
-		progress.set(0);
 		System.out.println("STEP 3 - Writing into daa-file: " + daaFile.getAbsolutePath());
+		maxProgress = (int) numOfLines - (int) numOfLines_header;
+		progress.set(0);
 		ArrayList<Thread> batchReaders = new ArrayList<Thread>();
 		for (long filePointer : batchSet)
 			batchReaders.add(new BatchReader(filePointer, mafFile, subjectInfos));
@@ -117,6 +120,26 @@ public class MAF_Converter {
 
 	}
 
+	private int countHeaderLines(File mafFile) {
+		int counter = 0;
+		try {
+			String l;
+			BufferedReader buf = new BufferedReader(new FileReader(mafFile));
+			while ((l = buf.readLine()) != null) {
+				if (!l.startsWith("# batch"))
+					counter++;
+				else {
+					buf.close();
+					return counter;
+				}
+			}
+			buf.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return counter;
+	}
+
 	private void reportProgress(int delta) {
 		progress.getAndAdd(delta);
 		int p = ((int) ((((double) progress.get() / (double) maxProgress)) * 100) / 10) * 10;
@@ -146,16 +169,10 @@ public class MAF_Converter {
 		private int readChars;
 		private int last_i = 0;
 
+		int counter = 0;
+
 		public BatchReader(long filePointer, File mafFile, ArrayList<Object[]> subjectInfo) {
 			try {
-
-				InputStream is;
-				try {
-					is = new BufferedInputStream(new GZIPInputStream(new FileInputStream(mafFile)));
-				} catch (ZipException e) {
-					is = new BufferedInputStream(new FileInputStream(mafFile));
-				}
-
 				raf = new RandomAccessFile(mafFile, "r");
 				raf.seek(filePointer);
 				readChars = raf.read(buffer);
@@ -174,9 +191,11 @@ public class MAF_Converter {
 					latch.countDown();
 					return;
 				}
+
 				lastParsedHit.setReadInfo(readInfo);
 				hits.add(lastParsedHit);
 				lastParsedHit = null;
+
 			}
 
 			if (endOfBatchReached) {
@@ -197,17 +216,12 @@ public class MAF_Converter {
 					else {
 
 						parsedLines++;
-						if (parsedLines > 0 && parsedLines % 100 == 0)
-							reportProgress(100);
+						if (parsedLines > 0 && parsedLines % 10 == 0)
+							reportProgress(10);
 
 						last_i = i + 1;
 						String l = line.toString();
 						line = new StringBuilder();
-
-						if (l.startsWith("#")) {
-							endOfBatchReached = true;
-							break;
-						}
 
 						if (l.startsWith("s") && lineTriple[1] != null) {
 
@@ -278,14 +292,18 @@ public class MAF_Converter {
 		private long startPos, chunkSize;
 		private ConcurrentSkipListSet<SubjectEntry> subjectInfo_Set;
 		private ConcurrentSkipListSet<Long> batchSet;
+		private ArrayList<Object[]> readInfos;
+		private boolean processHeader;
 
 		public ProcessThread(File mafFile, long startPos, long chunkSize, ConcurrentSkipListSet<SubjectEntry> subjectInfo_Set,
-				ConcurrentSkipListSet<Long> batchSet) {
+				ConcurrentSkipListSet<Long> batchSet, ArrayList<Object[]> readInfos, boolean firstThread) {
 			this.mafFile = mafFile;
 			this.startPos = startPos;
 			this.chunkSize = chunkSize;
 			this.subjectInfo_Set = subjectInfo_Set;
 			this.batchSet = batchSet;
+			this.readInfos = readInfos;
+			this.processHeader = firstThread;
 		}
 
 		public void run() {
@@ -297,8 +315,11 @@ public class MAF_Converter {
 
 				byte[] buffer = new byte[1024 * 1024];
 				int readChars = 0, colNumber = 0, parsedLines = 0;
-				boolean b1 = false, b2 = false, b3 = false, b4 = false, doBreak = false;
-				;
+				boolean enterRefLine = false, isRefLine = false, isQueryLine = false, isHashLine = false, startNewBatchBlock = false,
+						startNewBatchSubBlock = false, doBreak = false;
+				int readIndex = 0, lastReadIndex = 0;
+				Character lastChar = null;
+
 				StringBuilder buf = new StringBuilder();
 				StringBuilder line = new StringBuilder();
 				Object[] subject = new Object[2];
@@ -307,6 +328,7 @@ public class MAF_Converter {
 					if (doBreak)
 						break;
 
+					int lastI = 0;
 					for (int i = 0; i < readChars; i++) {
 
 						if (doBreak)
@@ -321,43 +343,70 @@ public class MAF_Converter {
 
 						switch (c) {
 						case '\n':
-							if (b2) {
+							if (isRefLine) {
 								if (subject[0] != null && subject[1] != null)
 									subjectInfo_Set.add(new SubjectEntry((SparseString) subject[0], (int) subject[1]));
-								b2 = false;
-
-								if (parsedLines > chunkSize)
-									doBreak = true;
+								isRefLine = false;
 
 							}
-							if (b4) {
+
+							if (startNewBatchBlock && processHeader) {
 								batchSet.add(raf.getFilePointer() - (readChars - i));
-								b4 = false;
+								startNewBatchBlock = false;
+								readIndex = 0;
+								lastReadIndex = 0;
+								processHeader = false;
+							}
+							if (startNewBatchSubBlock) {
+								batchSet.add(raf.getFilePointer() - (readChars - lastI));
+								startNewBatchSubBlock = false;
+							}
+							if (isQueryLine) {
+								lastI = i;
+								isQueryLine = false;
+								if (parsedLines > chunkSize)
+									doBreak = true;
 							}
 							buf = new StringBuilder();
 							line = new StringBuilder();
 							colNumber = 0;
 							break;
 						case ' ':
-							if (i > 0 && (char) buffer[i - 1] != ' ') {
+							if (lastChar != null && lastChar != ' ') {
 								String content = buf.toString();
+
 								if (colNumber == 0 && content.equals("a"))
-									b1 = true;
-								if (colNumber == 0 && content.equals("s") && b1) {
-									b1 = false;
-									b2 = true;
+									enterRefLine = true;
+								if (colNumber == 0 && content.equals("s") && enterRefLine) {
+									enterRefLine = false;
+									isRefLine = true;
 									subject = new Object[2];
 								}
+								if (colNumber == 0 && content.equals("s") && !isRefLine)
+									isQueryLine = true;
 								if (colNumber == 0 && content.equals("#"))
-									b3 = true;
-								if (b2 && colNumber == 1)
-									subject[0] = new SparseString(buf.toString());
-								if (b3 && colNumber == 1 && buf.toString().equals("batch")) {
-									subject[0] = new SparseString(buf.toString());
-									b3 = false;
-									b4 = true;
+									isHashLine = true;
+
+								if (isQueryLine && colNumber == 1) {
+									String query = content;
+									while (!readInfos.get(readIndex)[0].toString().equals(query)) {
+										readIndex++;
+										if (readIndex == readInfos.size()) {
+											readIndex = 0;
+										}
+									}
+									if (readIndex < lastReadIndex)
+										startNewBatchSubBlock = true;
+									lastReadIndex = readIndex;
 								}
-								if (b2 && colNumber == 5)
+								if (isRefLine && colNumber == 1)
+									subject[0] = new SparseString(buf.toString());
+								if (isHashLine && colNumber == 1 && buf.toString().equals("batch")) {
+									subject[0] = new SparseString(buf.toString());
+									isHashLine = false;
+									startNewBatchBlock = true;
+								}
+								if (isRefLine && colNumber == 5)
 									subject[1] = Integer.parseInt(buf.toString());
 								buf = new StringBuilder();
 								line.append(c);
@@ -368,6 +417,8 @@ public class MAF_Converter {
 							buf.append(c);
 							line.append(c);
 						}
+
+						lastChar = c;
 
 					}
 
@@ -386,7 +437,7 @@ public class MAF_Converter {
 	}
 
 	public ArrayList<Thread> generateProcessThreads(File file, long chunk, ConcurrentSkipListSet<SubjectEntry> subjectInfo_Set,
-			ConcurrentSkipListSet<Long> batchSet) {
+			ConcurrentSkipListSet<Long> batchSet, ArrayList<Object[]> readInfos) {
 
 		ArrayList<Thread> processThreads = new ArrayList<Thread>();
 		try {
@@ -399,18 +450,23 @@ public class MAF_Converter {
 			}
 
 			try {
+				boolean initNewThread = false;
 				byte[] c = new byte[1024];
 				int count = 0;
 				int readChars = 0;
 				long filePointer = 0;
-				processThreads.add(new ProcessThread(file, filePointer, chunk, subjectInfo_Set, batchSet));
+				processThreads.add(new ProcessThread(file, filePointer, chunk, subjectInfo_Set, batchSet, readInfos, true));
 				while ((readChars = is.read(c)) != -1) {
 					for (int i = 0; i < readChars; ++i) {
 						filePointer++;
 						if (c[i] == '\n') {
 							count++;
 							if (count % (chunk + 1) == 0)
-								processThreads.add(new ProcessThread(file, filePointer, chunk, subjectInfo_Set, batchSet));
+								initNewThread = true;
+							if (initNewThread && i > 0 && c[i - 1] == '\n') {
+								processThreads.add(new ProcessThread(file, filePointer, chunk, subjectInfo_Set, batchSet, readInfos, false));
+								initNewThread = false;
+							}
 						}
 					}
 				}

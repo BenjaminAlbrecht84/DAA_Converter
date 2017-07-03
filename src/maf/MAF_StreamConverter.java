@@ -28,7 +28,7 @@ public class MAF_StreamConverter {
 	public void run(File daaFile, ArrayList<File> daaFiles, File queryFile, int cores, boolean verbose, File headerFile) {
 
 		long time = System.currentTimeMillis();
-		System.out.println("\nConverting batch files to " + daaFile.getName() + "...");
+		System.out.println("\nConverting batch files to " + daaFile.getAbsolutePath() + "...");
 
 		this.executor = Executors.newFixedThreadPool(cores);
 		MAF_Header headerInfo = new MAF_Header(headerFile);
@@ -67,8 +67,8 @@ public class MAF_StreamConverter {
 				headerInfo.getK(), headerInfo.getLambda());
 
 		// writing hits into daa file
-		maxProgress = (int) getTotalQueryRecords(daaReader);
 		System.out.println("STEP 3 - Writing into daa-file: " + daaFile.getAbsolutePath());
+		maxProgress = (int) getTotalQueryRecords(daaReader);
 		ArrayList<Thread> batchReaders = new ArrayList<Thread>();
 		for (DAA_Reader reader : daaReader)
 			batchReaders.add(new BatchReader(reader, subjectInfos));

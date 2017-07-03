@@ -2,9 +2,9 @@ package maf;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -12,27 +12,36 @@ import java.util.concurrent.Executors;
 
 public class MAF_Streamer {
 
-	private File queryFile;
+	private final static File SYSTEM_TMP = new File(System.getProperty("java.io.tmpdir"));
+
+	private File queryFile, tmpFolder;
 	private int cores;
 	private boolean verbose;
 
 	private CountDownLatch countDownLatch = new CountDownLatch(0);
 	private ExecutorService executor;
 
-	public MAF_Streamer(File queryFile, int cores, boolean verbose) {
+	public MAF_Streamer(File queryFile, File tmpFolder, int cores, boolean verbose) {
 		this.queryFile = queryFile;
+		this.tmpFolder = tmpFolder;
 		this.cores = cores;
 		this.verbose = verbose;
 		this.executor = Executors.newFixedThreadPool(1);
 	}
 
 	public Object[] processInputStream() {
-		
+
 		ArrayList<Thread> converterThreads = new ArrayList<Thread>();
 
-		String[] split = queryFile.getAbsolutePath().split(File.separator);
-		File tmpFolder = new File(queryFile.getAbsolutePath().replaceAll(split[split.length - 1], "tmp"));
-		tmpFolder.mkdir();
+		tmpFolder = tmpFolder == null ? new File(SYSTEM_TMP.getAbsolutePath() + File.separatorChar + "temporary_daaFiles") : tmpFolder;
+
+		if (tmpFolder.exists())
+			deleteDir(tmpFolder);
+		if (!tmpFolder.mkdir()) {
+			System.err.println("ERROR: cannot create tmp-folder " + tmpFolder.getAbsolutePath() + " (please check -t parameter)");
+			System.exit(0);
+		}
+
 		File headerFile = null;
 
 		try {
@@ -64,22 +73,15 @@ public class MAF_Streamer {
 							batchBuilder.append(l + "\n");
 
 						}
+
 						if (++lineCounter > 1000 || l.startsWith("# batch")) {
-							if (batchFile != null && (lineCounter > 1000 || l.startsWith("# batch"))) {
+							if (batchFile != null && lineCounter > 1000) {
 								writeFile(batchBuilder.toString(), batchFile, !firstWrite);
 								batchBuilder = new StringBuilder();
 								firstWrite = false;
 								lineCounter = 0;
 							}
-							if (l.startsWith("# batch")) {
-
-								if (batchFile != null) {
-									Thread daaThread = writeDAAFile(batchFile, queryFile, headerFile, cores, verbose);
-									converterThreads.add(daaThread);
-									executor.submit(daaThread);
-									countDownLatch = new CountDownLatch((int) countDownLatch.getCount() + 1);
-								}
-
+							if (l.startsWith("# batch") && batchFile == null) {
 								firstWrite = true;
 								batchFile = new File(tmpFolder.getAbsolutePath() + File.separatorChar + "batch_" + (batchCounter++) + ".maf");
 								batchBuilder = new StringBuilder();
@@ -88,6 +90,31 @@ public class MAF_Streamer {
 
 							}
 						}
+
+						// if (++lineCounter > 1000 || l.startsWith("# batch")) {
+						// if (batchFile != null && (lineCounter > 1000 || l.startsWith("# batch"))) {
+						// writeFile(batchBuilder.toString(), batchFile, !firstWrite);
+						// batchBuilder = new StringBuilder();
+						// firstWrite = false;
+						// lineCounter = 0;
+						// }
+						// if (l.startsWith("# batch")) {
+						//
+						// if (batchFile != null) {
+						// Thread daaThread = writeDAAFile(batchFile, queryFile, headerFile, cores, verbose);
+						// converterThreads.add(daaThread);
+						// executor.submit(daaThread);
+						// countDownLatch = new CountDownLatch((int) countDownLatch.getCount() + 1);
+						// }
+						//
+						// firstWrite = true;
+						// batchFile = new File(tmpFolder.getAbsolutePath() + File.separatorChar + "batch_" + (batchCounter++) + ".maf");
+						// batchBuilder = new StringBuilder();
+						// batchBuilder.append("# batch " + batchCounter + "\n");
+						// lineCounter = 0;
+						//
+						// }
+						// }
 					} else if (batchFile != null && batchFile.length() > 500000000) {
 						if (batchFile != null) {
 							Thread daaThread = writeDAAFile(batchFile, queryFile, headerFile, cores, verbose);
@@ -188,4 +215,18 @@ public class MAF_Streamer {
 			e.printStackTrace();
 		}
 	}
+
+	private static boolean deleteDir(File dir) {
+		if (dir.isDirectory()) {
+			String[] children = dir.list();
+			for (int i = 0; i < children.length; i++) {
+				boolean success = deleteDir(new File(dir, children[i]));
+				if (!success) {
+					return false;
+				}
+			}
+		}
+		return dir.delete();
+	}
+
 }
