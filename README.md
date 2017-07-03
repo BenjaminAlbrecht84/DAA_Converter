@@ -1,6 +1,6 @@
 # DAA_Converter
 
-This piece of code converts a MAF-File produced by LAST into a DIAMOND specific file format called DAA-Files, which can then be loaded into MEGAN for example.
+This piece of code converts a MAF-File produced by LAST into a DIAMOND specific file format called DAA-File, which can then be loaded into MEGAN for example.
 
 Given a query file together with a LAST database you basically have to conduct the following steps:
 i. run LAST mapping the query on a database by reporting a MAF file
