@@ -78,12 +78,12 @@ public class MainBinary {
 				break;
 			case "-t":
 				tmpFolder = new File(args[i + 1]);
-				if (!tmpFolder.isDirectory()) {
-					System.err.print("ERROR: invalid tmp directory " + (args[i + 1]) + " (directory does not exist)");
-					wrongSetting = true;
-				}
 				if (tmpFolder.exists())
 					deleteDir(tmpFolder);
+				if (!tmpFolder.mkdir()) {
+					System.err.print("ERROR: invalid tmp directory " + (args[i + 1]) + " (directory could not be created)");
+					wrongSetting = true;
+				}
 				i++;
 				break;
 			case "-v":
