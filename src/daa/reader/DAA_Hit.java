@@ -305,4 +305,21 @@ public class DAA_Hit {
 		return editByteOperations;
 	}
 
+	public int getTotalQueryLength() {
+		return totalQueryLength;
+	}
+
+	public byte[] getTotalQuerySequence() {
+		return totalQuerySequence;
+	}
+
+	public void copyQueryProperties(DAA_Hit hit) {
+		totalQueryLength = hit.getTotalQueryLength();
+		totalQuerySequence = hit.getTotalQuerySequence();
+		queryName = hit.getQueryName();
+		queryStart = hit.getQueryStart();
+		queryLength = hit.getQueryLength();
+		packedQuerySequence = hit.getPackedQuerySequence();
+	}
+
 }

@@ -2,6 +2,7 @@ package startUp;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 
 import maf.MAF_Converter;
@@ -130,12 +131,12 @@ public class MainBinary {
 
 	private static boolean deleteDir(File dir) {
 		if (dir.isDirectory()) {
-			String[] children = dir.list();
-			for (int i = 0; i < children.length; i++) {
-				boolean success = deleteDir(new File(dir, children[i]));
-				if (!success) {
-					return false;
-				}
+			File[] files = dir.listFiles();
+			for (int i = 0; i < files.length; i++) {
+				if (files[i].isDirectory())
+					deleteDir(files[i]);
+				 else 
+					files[i].delete();				
 			}
 		}
 		return dir.delete();

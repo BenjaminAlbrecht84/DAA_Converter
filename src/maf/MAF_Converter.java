@@ -233,8 +233,9 @@ public class MAF_Converter {
 								break;
 							}
 							hit.setReadInfo(readInfo);
-							if (hit.makesSense())
+							if (hit.makesSense()) {
 								hits.add(hit);
+							}
 
 							lineTriple = new String[3];
 

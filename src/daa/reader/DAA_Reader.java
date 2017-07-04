@@ -138,9 +138,11 @@ public class DAA_Reader {
 				if (i == index) {
 					DAA_Hit hit = new DAA_Hit();
 					hit.parseQueryProperties(filePointer, hitBuffer, false, true);
-					while (hitBuffer.position() < hitBuffer.capacity()) {
-						hit.parseHitProperties(header, hitBuffer, false);
-						daaHits.add(hit);
+					while (hitBuffer.position() < hitBuffer.capacity()) {					
+						DAA_Hit h = new DAA_Hit();
+						h.copyQueryProperties(hit);
+						h.parseHitProperties(header, hitBuffer, false);
+						daaHits.add(h);
 					}
 					break;
 				}
