@@ -9,7 +9,7 @@ iii. run MEGAN for first meganizing the DAA file and then visualizing the assign
 
 ## Downloading the program
 
-Get the current version from [here](https://github.com/BenjaminAlbrecht84/DAA_Converter/releases/download/v0.8.3/DAA_Converter.jar).
+Get the current version from [here](https://github.com/BenjaminAlbrecht84/DAA_Converter/releases/download/v0.8.4/DAA_Converter.jar).
 
 ## Running the program
 
