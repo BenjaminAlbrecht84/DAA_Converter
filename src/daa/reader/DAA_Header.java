@@ -240,6 +240,14 @@ public class DAA_Header {
 		return dbSeqsUsed;
 	}
 
+	public int getGapOpen() {
+		return gapOpen;
+	}
+
+	public int getGapExtend() {
+		return gapExtend;
+	}
+
 	public void print() {
 
 		System.out.println("DIAMOND HEADER *********************\n");

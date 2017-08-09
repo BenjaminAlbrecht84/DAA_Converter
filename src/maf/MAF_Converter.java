@@ -37,8 +37,11 @@ public class MAF_Converter {
 		System.out.println("\nConverting " + mafFile.getName() + " to " + daaFile.getName() + "...");
 
 		this.executor = Executors.newFixedThreadPool(cores);
-		MAF_Header headerInfo = headerFile == null ? new MAF_Header(mafFile) : new MAF_Header(headerFile);
-		headerInfo.load();
+		Header headerInfo = new Header();
+		if (headerFile == null)
+			headerInfo.loadFromMaf(mafFile);
+		else
+			headerInfo.loadFromMaf(headerFile);
 
 		long numOfLines_header = headerFile != null ? LineCounter.run(headerFile) : countHeaderLines(mafFile);
 		long numOfLines = LineCounter.run(mafFile);
@@ -294,7 +297,6 @@ public class MAF_Converter {
 		private ConcurrentSkipListSet<SubjectEntry> subjectInfo_Set;
 		private ConcurrentSkipListSet<Long> batchSet;
 		private ArrayList<Object[]> readInfos;
-		private boolean processHeader;
 
 		public ProcessThread(File mafFile, long startPos, long chunkSize, ConcurrentSkipListSet<SubjectEntry> subjectInfo_Set,
 				ConcurrentSkipListSet<Long> batchSet, ArrayList<Object[]> readInfos, boolean firstThread) {
@@ -304,7 +306,10 @@ public class MAF_Converter {
 			this.subjectInfo_Set = subjectInfo_Set;
 			this.batchSet = batchSet;
 			this.readInfos = readInfos;
-			this.processHeader = firstThread;
+
+			if (firstThread)
+				batchSet.add(0L);
+
 		}
 
 		public void run() {
@@ -349,14 +354,6 @@ public class MAF_Converter {
 									subjectInfo_Set.add(new SubjectEntry((SparseString) subject[0], (int) subject[1]));
 								isRefLine = false;
 
-							}
-
-							if (startNewBatchBlock && processHeader) {
-								batchSet.add(raf.getFilePointer() - (readChars - i));
-								startNewBatchBlock = false;
-								readIndex = 0;
-								lastReadIndex = 0;
-								processHeader = false;
 							}
 							if (startNewBatchSubBlock) {
 								batchSet.add(raf.getFilePointer() - (readChars - lastI));

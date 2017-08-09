@@ -42,11 +42,6 @@ public class MAF_Hit {
 
 	public void loadProperties(String[] lineTriple, Object[] readInfo, ArrayList<Object[]> subjectInfo) {
 
-		if (lineTriple[0] == null) {
-			System.out.println(lineTriple[1]);
-			System.out.println(lineTriple[2]);
-		}
-
 		// parsing scoring parameters
 		String[] split = lineTriple[0].split("\\s+");
 		rawScore = Integer.parseInt(split[1].substring(6));
@@ -65,12 +60,11 @@ public class MAF_Hit {
 		frameDir = split[4].equals("+") ? FrameDirection.POSITIVE : FrameDirection.NEGATIVE;
 		ali[0] = split[6].toUpperCase();
 
-		// System.out.println(" Parsed: " + readInfo.get(readID)[0].toString());
-		// for (String l : lineTriple)
-		// System.out.println(l);
-		// System.out.println(ali[0] + "\n" + ali[1]);
-
-		editOperations = DAACompressAlignment.run(ali);
+		if (ali[0].length() != ali[1].length()) {
+			for (int i = 0; i < lineTriple.length; i++)
+				System.out.println(lineTriple[i]);
+		} else
+			editOperations = DAACompressAlignment.run(ali);
 
 	}
 
@@ -131,9 +125,24 @@ public class MAF_Hit {
 	}
 
 	public boolean makesSense() {
-		if (subjectID < 0)
+		if (subjectID < 0 || editOperations == null)
 			return false;
 		return true;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof MAF_Hit) {
+			MAF_Hit h = (MAF_Hit) o;
+			if (h.getQueryStart() == queryStart && h.getSubjectID() == subjectID && h.getReadName().equals(readName) && h.getRawScore() == rawScore
+					&& h.getQueryStart() == queryStart && h.getRefStart() == refStart && h.getEditOperations().size() == editOperations.size()) {
+				for (int i = 0; i < editOperations.size(); i++) {
+					if (editOperations.get(i) != h.getEditOperations().get(i))
+						return false;
+				}
+			}
+		}
+		return false;
 	}
 
 }

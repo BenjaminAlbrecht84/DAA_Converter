@@ -105,6 +105,23 @@ public class Hit {
 		return packedQuerySequence;
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof Hit) {
+			Hit h = (Hit) o;
+			if (h.getQuery_start() == query_start && h.getSubjectID() == subjectID && h.getReadName().equals(readName) && h.getRawScore() == rawScore
+					&& h.getRef_start() == ref_start && h.getEditOperations() != null && editOperations != null
+					&& h.getEditOperations().size() == editOperations.size()) {
+				for (int i = 0; i < editOperations.size(); i++) {
+					if (editOperations.get(i) != h.getEditOperations().get(i))
+						return false;
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
 	// FOR DEBUGGING ***********************************
 
 	public void print(String prefix) {

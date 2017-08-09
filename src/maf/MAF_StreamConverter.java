@@ -2,6 +2,7 @@ package maf;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -33,8 +34,11 @@ public class MAF_StreamConverter {
 		System.out.println("\nConverting batch files to " + daaFile.getAbsolutePath() + "...");
 
 		this.executor = Executors.newFixedThreadPool(cores);
-		MAF_Header headerInfo = new MAF_Header(headerFile);
-		headerInfo.load();
+		Header headerInfo = new Header();
+		if (headerFile.getName().endsWith("maf"))
+			headerInfo.loadFromMaf(headerFile);
+		if (headerFile.getName().endsWith("daa"))
+			headerInfo.loadFromDAA(headerFile);
 
 		ArrayList<DAA_Reader> daaReader = new ArrayList<DAA_Reader>();
 		for (File f : daaFiles)
@@ -86,10 +90,12 @@ public class MAF_StreamConverter {
 			runInParallel(batchReaders);
 
 			// storing hits
+			ArrayList<Hit> batchHits = new ArrayList<Hit>();
 			for (Thread reader : batchReaders) {
 				for (MAF_Hit mafHit : ((BatchReader) reader).getHits())
-					hits.add(new Hit(mafHit));
+					batchHits.add(new Hit(mafHit));
 			}
+			hits.addAll(filterForUniqueHits(batchHits));
 
 			// writing hits into daa file
 			if (hits.size() > 10000 || i == readInfos.size() - 1) {
@@ -112,6 +118,22 @@ public class MAF_StreamConverter {
 		long runtime = (System.currentTimeMillis() - time) / 1000;
 		System.out.println("Runtime: " + (runtime / 60) + "min " + (runtime % 60) + "s");
 
+	}
+
+	private ArrayList<Hit> filterForUniqueHits(ArrayList<Hit> batchHits) {
+		ArrayList<Hit> uniqueHits = new ArrayList<Hit>();
+		for (int i = 0; i < batchHits.size(); i++) {
+			boolean isUnique = true;
+			for (int j = i + 1; j < batchHits.size(); j++) {
+				if (batchHits.get(i).equals(batchHits.get(j))) {
+					isUnique = false;
+					break;
+				}
+			}
+			if (isUnique)
+				uniqueHits.add(batchHits.get(i));
+		}
+		return uniqueHits;
 	}
 
 	private int getTotalSeqUsed(ArrayList<DAA_Reader> daaReader) {

@@ -5,21 +5,28 @@ import java.io.File;
 import java.io.FileReader;
 import java.math.BigInteger;
 
-public class MAF_Header {
+import daa.reader.DAA_Header;
+import daa.reader.DAA_Reader;
 
-	private File maf_file;
+public class Header {
 
 	private int gapOpen, gapExtend;
 	private long dbSeqs;
 	private BigInteger dbLetters;
 	private double lambda, K;
 
-	public MAF_Header(File maf_file) {
-		this.maf_file = maf_file;
-		load();
+	public void loadFromDAA(File daaFile) {
+		DAA_Reader daaReader = new DAA_Reader(daaFile, false);
+		DAA_Header daaHeader = daaReader.getDAAHeader();
+		gapOpen = daaHeader.getGapOpen();
+		gapExtend = daaHeader.getGapExtend();
+		dbSeqs = daaHeader.getDbSeqsUsed();
+		dbLetters = daaHeader.getDbLetters();
+		lambda = daaHeader.getLambda();
+		K = daaHeader.getK();
 	}
 
-	public void load() {
+	public void loadFromMaf(File maf_file) {
 
 		try {
 
@@ -76,5 +83,5 @@ public class MAF_Header {
 	public double getK() {
 		return K;
 	}
-	
+
 }
