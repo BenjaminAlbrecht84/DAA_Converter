@@ -4,35 +4,41 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
+import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import startUp.MainBinary;
+
 public class MAF_Streamer {
 
-	private final static File SYSTEM_TMP = new File(System.getProperty("java.io.tmpdir"));
+	private final static File TMP_FOLDER = new File(getJarDirectiory());
 
 	private File queryFile, tmpFolder;
 	private int cores;
 	private boolean verbose;
+	private int chunkSize = 500000000;
 
 	private CountDownLatch countDownLatch = new CountDownLatch(0);
 	private ExecutorService executor;
 
-	public MAF_Streamer(File queryFile, File tmpFolder, int cores, boolean verbose) {
+	public MAF_Streamer(File queryFile, File tmpFolder, Integer chunkSize, int cores, boolean verbose) {
 		this.queryFile = queryFile;
 		this.tmpFolder = tmpFolder;
 		this.cores = cores;
 		this.verbose = verbose;
 		this.executor = Executors.newFixedThreadPool(1);
+		this.chunkSize = chunkSize != null ? chunkSize : this.chunkSize;
 	}
 
 	public Object[] processInputStream() {
 
 		ArrayList<Thread> converterThreads = new ArrayList<Thread>();
 
-		tmpFolder = tmpFolder == null ? new File(SYSTEM_TMP.getAbsolutePath() + File.separatorChar + "temporary_daaFiles") : tmpFolder;
+		tmpFolder = tmpFolder == null ? new File(TMP_FOLDER.getAbsolutePath() + File.separatorChar + "temporary_daaFiles") : tmpFolder;
 
 		if (tmpFolder.exists())
 			deleteDir(tmpFolder);
@@ -89,32 +95,7 @@ public class MAF_Streamer {
 
 							}
 						}
-
-						// if (++lineCounter > 1000 || l.startsWith("# batch")) {
-						// if (batchFile != null && (lineCounter > 1000 || l.startsWith("# batch"))) {
-						// writeFile(batchBuilder.toString(), batchFile, !firstWrite);
-						// batchBuilder = new StringBuilder();
-						// firstWrite = false;
-						// lineCounter = 0;
-						// }
-						// if (l.startsWith("# batch")) {
-						//
-						// if (batchFile != null) {
-						// Thread daaThread = writeDAAFile(batchFile, queryFile, headerFile, cores, verbose);
-						// converterThreads.add(daaThread);
-						// executor.submit(daaThread);
-						// countDownLatch = new CountDownLatch((int) countDownLatch.getCount() + 1);
-						// }
-						//
-						// firstWrite = true;
-						// batchFile = new File(tmpFolder.getAbsolutePath() + File.separatorChar + "batch_" + (batchCounter++) + ".maf");
-						// batchBuilder = new StringBuilder();
-						// batchBuilder.append("# batch " + batchCounter + "\n");
-						// lineCounter = 0;
-						//
-						// }
-						// }
-					} else if (batchFile != null && batchFile.length() > 500000000) {
+					} else if (batchFile != null && batchFile.length() > chunkSize) {
 						if (batchFile != null) {
 							Thread daaThread = writeDAAFile(batchFile, queryFile, headerFile, cores, verbose);
 							converterThreads.add(daaThread);
@@ -226,6 +207,17 @@ public class MAF_Streamer {
 			}
 		}
 		return dir.delete();
+	}
+
+	private static String getJarDirectiory() {
+		try {
+			CodeSource codeSource = MainBinary.class.getProtectionDomain().getCodeSource();
+			File jarFile = new File(codeSource.getLocation().toURI().getPath());
+			return jarFile.getParentFile().getPath();
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 }

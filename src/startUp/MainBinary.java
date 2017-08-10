@@ -2,7 +2,6 @@ package startUp;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 
 import maf.MAF_Converter;
@@ -16,6 +15,7 @@ public class MainBinary {
 		System.out.println("MAF2DAA Converter by Benjamin Albrecht");
 		System.out.println("Copyright (C) 2017 Benjamin Albrecht. This program comes with ABSOLUTELY NO WARRANTY.");
 
+		Integer chunkSize = null;
 		File mafFile = null;
 		File queryFile = null;
 		File daaFile = null;
@@ -40,6 +40,37 @@ public class MainBinary {
 					cores_streaming = Integer.parseInt(args[i + 1]);
 				} catch (Exception e) {
 					System.err.print("ERROR: not an integer " + (args[i + 1]));
+					wrongSetting = true;
+				}
+				i++;
+				break;
+			case "-cs":
+				String s = args[i + 1];
+				String num = s.substring(0, s.length() - 1);
+				try {
+					chunkSize = Integer.parseInt(num);
+					int factor = 1000000;
+					switch (s.charAt(s.length() - 1)) {
+					case 'k':
+					case 'K':
+						factor = 1000;
+						break;
+					case 'm':
+					case 'M':
+						factor = 1000000;
+						break;
+					case 'g':
+					case 'G':
+						factor = 1000000000;
+						break;
+					default:
+						System.err.println("Error: not a legal file-size identifier " + s.charAt(s.length() - 1)
+								+ " - legal identifiers are: k (for KB), m (for MB), and g (for GB)");
+						wrongSetting = true;
+					}
+					chunkSize *= factor;
+				} catch (NumberFormatException e) {
+					System.err.println("Error: not an integer " + num + ".");
 					wrongSetting = true;
 				}
 				i++;
@@ -102,7 +133,7 @@ public class MainBinary {
 
 		Object[] streamResults = null;
 		if (mafFile == null)
-			streamResults = new MAF_Streamer(queryFile, tmpFolder, cores_streaming, verbose).processInputStream();
+			streamResults = new MAF_Streamer(queryFile, tmpFolder, chunkSize, cores_streaming, verbose).processInputStream();
 
 		if (mafFile == null && streamResults == null)
 			printOptionsAndQuit();
@@ -117,13 +148,14 @@ public class MainBinary {
 	}
 
 	private static void printOptionsAndQuit() {
-		System.out.println("Mandatory Options: ");
+		System.out.println("Mandatory: ");
 		System.out.println("-m\t" + "path to MAF-File (can also be piped in, no gzip allowed here)");
 		System.out.println("-q\t" + "path to query-file in FASTA or FASTQ format (can also be gzipped)");
 		System.out.println("-d\t" + "name of the resulting DAA-File");
 		System.out.println("Optional: ");
 		System.out.println("-p\t" + "number of available processors (default: maximal number)");
 		System.out.println("-ps\t" + "number of available processors while input is piped-in (default: 1)");
+		System.out.println("-cs\t" + "chunk-size of temporary MAF files (default: 500m)");
 		System.out.println("-t\t" + "folder for temporary files (default: system's tmp folder)");
 		System.out.println("-v\t" + "sets verbose mode reporting numbers of reads/references/alignments being analyzed)");
 		System.exit(0);
@@ -135,8 +167,8 @@ public class MainBinary {
 			for (int i = 0; i < files.length; i++) {
 				if (files[i].isDirectory())
 					deleteDir(files[i]);
-				 else 
-					files[i].delete();				
+				else
+					files[i].delete();
 			}
 		}
 		return dir.delete();
