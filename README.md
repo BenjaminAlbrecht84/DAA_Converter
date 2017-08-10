@@ -9,7 +9,7 @@ iii. run MEGAN for first meganizing the DAA file and then visualizing the assign
 
 ## Downloading the program
 
-Get the current version from [here](https://github.com/BenjaminAlbrecht84/DAA_Converter/releases/download/v0.8.4/DAA_Converter.jar).
+Get the current version from [here](https://github.com/BenjaminAlbrecht84/DAA_Converter/releases/download/v0.8.4/DAA_Converter_v0.8.4.jar).
 
 ## Running the program
 
@@ -27,6 +27,7 @@ Parameter | Description
 --------- | -----------
 -p  | number of available processors (default: maximal number)
 -ps | number of available processors while input is piped-in (default: 1)
+-cs |	chunk-size of temporary MAF files (default: 500m)
 -t  | folder for temporary files (default: system's tmp folder)
 -v  | enables verbose mode for reporting numbers of reads/references/alignments being analyzed
 
