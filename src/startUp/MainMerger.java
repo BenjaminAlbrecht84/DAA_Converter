@@ -102,6 +102,7 @@ public class MainMerger {
 		System.out.println("Optional: ");
 		System.out.println("-p\t" + "number of available processors (default: maximal number)");
 		System.out.println("-v\t" + "sets verbose mode reporting numbers of reads/references/alignments being analyzed)");
+		System.out.println("--no-filter\t" + "disable filtering of dominated alignments (default: filtering activated))");
 		System.exit(0);
 	}
 
