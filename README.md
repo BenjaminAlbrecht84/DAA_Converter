@@ -4,9 +4,9 @@ This piece of code converts a MAF-File produced by LAST into a DIAMOND specific 
 
 Given a query file together with a LAST database you basically have to conduct the following steps:
 
-i. run LAST mapping the query on a database by reporting a MAF file
-ii. convert the MAF file into a DAA file by using this tool
-iii. run MEGAN for first meganizing the DAA file and then visualizing the assigned taxa  
+1. run LAST mapping the query on a database by reporting a MAF file
+2. convert the MAF file into a DAA file by using this tool
+3. run MEGAN for first meganizing the DAA file and then visualizing the assigned taxa  
 
 ## Downloading the program
 
@@ -27,11 +27,14 @@ Parameter | Description
 Parameter | Description
 --------- | -----------
 -p  | number of available processors (default: maximal number)
--ps | number of available processors while input is piped-in (default: 1)
--cs |	chunk-size of temporary MAF files (default: 500m)
 -t  | folder for temporary files (default: system's tmp folder)
 -v  | enables verbose mode for reporting numbers of reads/references/alignments being analyzed
 --no-filter | disable filtering of dominated alignments (default: filtering activated)
+
+Parameter | Description
+--------- | -----------
+-ps | number of available processors while input is piped-in (default: 1)
+-cs |	chunk-size of temporary MAF files while input is piped-in (default: 500m)
 
 ### Example:
 
