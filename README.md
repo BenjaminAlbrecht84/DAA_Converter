@@ -4,9 +4,9 @@ This piece of code converts a MAF-File produced by LAST into a DIAMOND specific 
 
 Given a query file together with a LAST database you basically have to conduct the following steps:
 
-1. run LAST mapping the query on a database by reporting a MAF file
-2. convert the MAF file into a DAA file by using this tool
-3. run MEGAN for first meganizing the DAA file and then visualizing the assigned taxa  
+1. Run LAST mapping the query on a database by reporting a MAF file.
+2. Convert the MAF file into a DAA file by using this tool.
+3. Run MEGAN for first meganizing the DAA file and then visualizing the assigned taxa.
 
 ## Downloading the program
 
