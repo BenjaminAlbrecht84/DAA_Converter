@@ -27,7 +27,7 @@ Parameter | Description
 Parameter | Description
 --------- | -----------
 -p  | number of available processors (default: maximal number)
--t  | folder for temporary files (default: system's tmp folder)
+-t  | folder for temporary files (default: folder where the converter is executed)
 -v  | enables verbose mode for reporting numbers of reads/references/alignments being analyzed
 --no-filter | disable filtering of dominated alignments (default: filtering activated)
 
