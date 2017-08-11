@@ -166,6 +166,7 @@ public class MainConverter {
 		System.out.println("-cs\t" + "chunk-size of temporary MAF files (default: 500m)");
 		System.out.println("-t\t" + "folder for temporary files (default: system's tmp folder)");
 		System.out.println("-v\t" + "sets verbose mode reporting numbers of reads/references/alignments being analyzed)");
+		System.out.println("--no-filter\t" + "disable filtering of dominated alignments (default: filtering activated))");
 		System.exit(0);
 	}
 
