@@ -30,6 +30,7 @@ Parameter | Description
 -cs |	chunk-size of temporary MAF files (default: 500m)
 -t  | folder for temporary files (default: system's tmp folder)
 -v  | enables verbose mode for reporting numbers of reads/references/alignments being analyzed
+--no-filter | disable filtering of dominated alignments (default: filtering activated)
 
 ### Example:
 
