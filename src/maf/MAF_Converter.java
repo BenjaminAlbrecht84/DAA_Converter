@@ -102,7 +102,7 @@ public class MAF_Converter {
 
 			// filtering hits
 			if (doFiltering) {
-				for (MAF_Hit mafHit : Hit_Filter.run(allHits))
+				for (MAF_Hit mafHit : Hit_Filter.run(allHits, headerInfo.getLambda(), headerInfo.getK()))
 					hits.add(new Hit(mafHit));
 			} else
 				for (MAF_Hit mafHit : allHits)

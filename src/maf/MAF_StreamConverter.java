@@ -99,7 +99,7 @@ public class MAF_StreamConverter {
 			// filtering hits
 			ArrayList<Hit> batchHits = new ArrayList<Hit>();
 			if (doFiltering) {
-				for (MAF_Hit mafHit : Hit_Filter.run(allHits))
+				for (MAF_Hit mafHit : Hit_Filter.run(allHits, headerInfo.getLambda(), headerInfo.getK()))
 					batchHits.add(new Hit(mafHit));
 			} else {
 				for (MAF_Hit mafHit : allHits)

@@ -8,7 +8,7 @@ import startUp.MainConverter;
 
 public class Hit_Filter {
 
-	public static ArrayList<MAF_Hit> run(ArrayList<MAF_Hit> hits) {
+	public static ArrayList<MAF_Hit> run(ArrayList<MAF_Hit> hits, double lambda, double K) {
 
 		ArrayList<MAF_Hit> filteredHits = new ArrayList<MAF_Hit>();
 		for (MAF_Hit h1 : hits) {
@@ -16,7 +16,9 @@ public class Hit_Filter {
 			for (MAF_Hit h2 : hits) {
 				if (!h1.equals(h2)) {
 					double coverage = cmpHitCoverage(h1, h2);
-					if (coverage > MainConverter.MIN_PROPORTION_COVERAGE && MainConverter.MIN_PRPOPRTION_SCORE * new Double(h2.getRawScore()) > new Double(h1.getRawScore())) {
+					double bitScore1 = cmpBitScore(h1.getRawScore(), lambda, K);
+					double bitScore2 = cmpBitScore(h2.getRawScore(), lambda, K);
+					if (coverage > MainConverter.MIN_PROPORTION_COVERAGE && MainConverter.MIN_PRPOPRTION_SCORE * bitScore2 > bitScore1) {
 						isDominated = true;
 						break;
 					}
@@ -28,6 +30,10 @@ public class Hit_Filter {
 
 		return filteredHits;
 
+	}
+
+	private static double cmpBitScore(int rawScore, double lambda, double K) {
+		return (new Double(rawScore) * lambda - Math.log(K)) / Math.log(2);
 	}
 
 	private static double cmpHitCoverage(MAF_Hit h1, MAF_Hit h2) {
