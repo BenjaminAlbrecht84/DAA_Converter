@@ -79,8 +79,8 @@ public class MainMerger {
 
 		ArrayList<File> daaFiles = findFiles(daaFolder, ".daa");
 		if (!daaFiles.isEmpty())
-			new MAF_StreamConverter().run(daaFile, daaFiles, queryFile, cores, verbose, daaFiles.get(0));
-		
+			new MAF_StreamConverter().run(daaFile, daaFiles, queryFile, cores, verbose, daaFiles.get(0), false);
+
 	}
 
 	private static ArrayList<File> findFiles(File folder, String ending) {

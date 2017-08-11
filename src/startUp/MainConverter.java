@@ -8,7 +8,10 @@ import maf.MAF_Converter;
 import maf.MAF_StreamConverter;
 import maf.MAF_Streamer;
 
-public class MainBinary {
+public class MainConverter {
+
+	public final static double MIN_PROPORTION_COVERAGE = 0.9;
+	public final static double MIN_PRPOPRTION_SCORE = 0.9;
 
 	public static void main(String[] args) {
 
@@ -21,6 +24,7 @@ public class MainBinary {
 		File daaFile = null;
 		File tmpFolder = null;
 		Integer cores = Runtime.getRuntime().availableProcessors(), cores_streaming = 1;
+		boolean doFiltering = true;
 		boolean verbose = false;
 
 		boolean wrongSetting = false;
@@ -121,6 +125,9 @@ public class MainBinary {
 			case "-v":
 				verbose = true;
 				break;
+			case "--no-filter":
+				doFiltering = false;
+				break;
 			default:
 				System.err.println("ERROR: unknown paramter " + option);
 				wrongSetting = true;
@@ -133,17 +140,18 @@ public class MainBinary {
 
 		Object[] streamResults = null;
 		if (mafFile == null)
-			streamResults = new MAF_Streamer(queryFile, tmpFolder, chunkSize, cores_streaming, verbose).processInputStream();
+			streamResults = new MAF_Streamer(queryFile, tmpFolder, chunkSize, cores_streaming, doFiltering, verbose).processInputStream();
 
 		if (mafFile == null && streamResults == null)
 			printOptionsAndQuit();
 
 		if (streamResults != null) {
-			new MAF_StreamConverter().run(daaFile, (ArrayList<File>) streamResults[1], queryFile, cores, verbose, (File) streamResults[0]);
+			new MAF_StreamConverter().run(daaFile, (ArrayList<File>) streamResults[1], queryFile, cores, verbose, (File) streamResults[0],
+					doFiltering);
 			deleteDir((File) streamResults[2]);
 		}
 		if (mafFile != null)
-			new MAF_Converter().run(daaFile, mafFile, queryFile, cores, verbose, null);
+			new MAF_Converter().run(daaFile, mafFile, queryFile, cores, verbose, null, doFiltering);
 
 	}
 

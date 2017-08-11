@@ -20,6 +20,7 @@ import java.util.zip.ZipException;
 import daa.writer.DAA_Writer;
 import hits.Hit;
 import io.FastAQ_Reader;
+import util.Hit_Filter;
 import util.LineCounter;
 import util.SparseString;
 
@@ -31,7 +32,7 @@ public class MAF_Converter {
 	private CountDownLatch latch;
 	private ExecutorService executor;
 
-	public void run(File daaFile, File mafFile, File queryFile, int cores, boolean verbose, File headerFile) {
+	public void run(File daaFile, File mafFile, File queryFile, int cores, boolean verbose, File headerFile, boolean doFiltering) {
 
 		long time = System.currentTimeMillis();
 		System.out.println("\nConverting " + mafFile.getName() + " to " + daaFile.getName() + "...");
@@ -95,10 +96,17 @@ public class MAF_Converter {
 			runInParallel(batchReaders);
 
 			// storing hits
-			for (Thread reader : batchReaders) {
-				for (MAF_Hit mafHit : ((BatchReader) reader).getHits())
+			ArrayList<MAF_Hit> allHits = new ArrayList<MAF_Hit>();
+			for (Thread reader : batchReaders)
+				allHits.addAll(((BatchReader) reader).getHits());
+
+			// filtering hits
+			if (doFiltering) {
+				for (MAF_Hit mafHit : Hit_Filter.run(allHits))
 					hits.add(new Hit(mafHit));
-			}
+			} else
+				for (MAF_Hit mafHit : allHits)
+					hits.add(new Hit(mafHit));
 
 			// writing hits into daa file
 			if (hits.size() > 10000 || i == readInfos.size() - 1) {

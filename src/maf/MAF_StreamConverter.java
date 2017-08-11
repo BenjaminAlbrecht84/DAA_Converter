@@ -18,6 +18,8 @@ import daa.writer.DAA_Writer;
 import hits.Hit;
 import hits.ReadHits;
 import io.FastAQ_Reader;
+import maf.MAF_Converter.BatchReader;
+import util.Hit_Filter;
 import util.SparseString;
 
 public class MAF_StreamConverter {
@@ -28,7 +30,7 @@ public class MAF_StreamConverter {
 	private CountDownLatch latch;
 	private ExecutorService executor;
 
-	public void run(File daaFile, ArrayList<File> daaFiles, File queryFile, int cores, boolean verbose, File headerFile) {
+	public void run(File daaFile, ArrayList<File> daaFiles, File queryFile, int cores, boolean verbose, File headerFile, boolean doFiltering) {
 
 		long time = System.currentTimeMillis();
 		System.out.println("\nConverting batch files to " + daaFile.getAbsolutePath() + "...");
@@ -90,9 +92,17 @@ public class MAF_StreamConverter {
 			runInParallel(batchReaders);
 
 			// storing hits
+			ArrayList<MAF_Hit> allHits = new ArrayList<MAF_Hit>();
+			for (Thread reader : batchReaders)
+				allHits.addAll(((BatchReader) reader).getHits());
+
+			// filtering hits
 			ArrayList<Hit> batchHits = new ArrayList<Hit>();
-			for (Thread reader : batchReaders) {
-				for (MAF_Hit mafHit : ((BatchReader) reader).getHits())
+			if (doFiltering) {
+				for (MAF_Hit mafHit : Hit_Filter.run(allHits))
+					batchHits.add(new Hit(mafHit));
+			} else {
+				for (MAF_Hit mafHit : allHits)
 					batchHits.add(new Hit(mafHit));
 			}
 			hits.addAll(filterForUniqueHits(batchHits));
@@ -195,13 +205,15 @@ public class MAF_StreamConverter {
 					int rawScore = daaHit.getRawScore();
 					String subjectName = daaHit.getReferenceName();
 					int refStart = daaHit.getRefStart();
+					int refEnd = refStart + daaHit.getRefLength();
 					String queryName = daaHit.getQueryName();
 					int queryStart = daaHit.getQueryStart();
+					int queryLength = daaHit.getQueryLength();
 					int frame = daaHit.getFrame();
 					ArrayList<Byte> editOperations = daaHit.getEditByteOperations();
 					byte[] dnaSequence = daaHit.getPackedQuerySequence();
-					MAF_Hit mafHit = new MAF_Hit(rawScore, subjectName, refStart, queryName, queryStart, frame, editOperations, subjectInfo,
-							dnaSequence, (int) readInfo[2]);
+					MAF_Hit mafHit = new MAF_Hit(rawScore, subjectName, refStart, refEnd, queryName, queryStart, queryLength, frame, editOperations,
+							subjectInfo, dnaSequence, (int) readInfo[2]);
 					hits.add(mafHit);
 
 				}

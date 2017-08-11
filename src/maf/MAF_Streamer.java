@@ -11,7 +11,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import startUp.MainBinary;
+import startUp.MainConverter;
 
 public class MAF_Streamer {
 
@@ -19,17 +19,18 @@ public class MAF_Streamer {
 
 	private File queryFile, tmpFolder;
 	private int cores;
-	private boolean verbose;
+	private boolean verbose, doFiltering;
 	private int chunkSize = 500000000;
 
 	private CountDownLatch countDownLatch = new CountDownLatch(0);
 	private ExecutorService executor;
 
-	public MAF_Streamer(File queryFile, File tmpFolder, Integer chunkSize, int cores, boolean verbose) {
+	public MAF_Streamer(File queryFile, File tmpFolder, Integer chunkSize, int cores, boolean doFiltering, boolean verbose) {
 		this.queryFile = queryFile;
 		this.tmpFolder = tmpFolder;
 		this.cores = cores;
 		this.verbose = verbose;
+		this.doFiltering = doFiltering;
 		this.executor = Executors.newFixedThreadPool(1);
 		this.chunkSize = chunkSize != null ? chunkSize : this.chunkSize;
 	}
@@ -175,7 +176,7 @@ public class MAF_Streamer {
 
 		@Override
 		public void run() {
-			new MAF_Converter().run(daaFile, batchFile, queryFile, cores, verbose, headerFile);
+			new MAF_Converter().run(daaFile, batchFile, queryFile, cores, verbose, headerFile, doFiltering);
 			batchFile.delete();
 			countDownLatch.countDown();
 		}
@@ -211,7 +212,7 @@ public class MAF_Streamer {
 
 	private static String getJarDirectiory() {
 		try {
-			CodeSource codeSource = MainBinary.class.getProtectionDomain().getCodeSource();
+			CodeSource codeSource = MainConverter.class.getProtectionDomain().getCodeSource();
 			File jarFile = new File(codeSource.getLocation().toURI().getPath());
 			return jarFile.getParentFile().getPath();
 		} catch (URISyntaxException e) {
