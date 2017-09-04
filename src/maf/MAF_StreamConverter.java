@@ -2,9 +2,7 @@ package maf;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -16,9 +14,7 @@ import daa.reader.DAA_Hit;
 import daa.reader.DAA_Reader;
 import daa.writer.DAA_Writer;
 import hits.Hit;
-import hits.ReadHits;
 import io.FastAQ_Reader;
-import maf.MAF_Converter.BatchReader;
 import util.Hit_Filter;
 import util.SparseString;
 

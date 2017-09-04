@@ -11,7 +11,7 @@ import maf.MAF_Streamer;
 public class MainConverter {
 
 	public final static double MIN_PROPORTION_COVERAGE = 0.9;
-	public final static double MIN_PRPOPRTION_SCORE = 0.9;
+	public final static double MIN_PROPORTION_SCORE = 0.9;
 
 	public static void main(String[] args) {
 
