@@ -16,7 +16,7 @@ public class Hit_Filter {
 			// checking if h1 is dominated by another hit
 			boolean isDominated = false;
 			for (MAF_Hit h2 : hits) {
-				if (!h1.equals(h2)) {				
+				if (!h1.equals(h2)) {
 					double coverage = cmpHitCoverage(h1, h2);
 					double bitScore1 = cmpBitScore(h1.getRawScore(), lambda, K);
 					double bitScore2 = cmpBitScore(h2.getRawScore(), lambda, K);
@@ -46,8 +46,7 @@ public class Hit_Filter {
 
 		int[] h1Coord = getQueryCoordinates(h1);
 		int[] h2Coord = getQueryCoordinates(h2);
-		double length1 = h1Coord[1] - h1Coord[0] + 1;
-		
+
 		// checking if overlap exists
 		if (h1Coord[0] > h2Coord[1])
 			return 0;
@@ -58,6 +57,7 @@ public class Hit_Filter {
 		double l = Math.max(h1Coord[0], h2Coord[0]);
 		double r = Math.min(h1Coord[1], h2Coord[1]);
 		double overlap = r - l + 1.;
+		double length1 = h1Coord[1] - h1Coord[0] + 1;
 		double coverage = overlap / length1;
 
 		return coverage;
@@ -65,7 +65,7 @@ public class Hit_Filter {
 
 	private static int[] getQueryCoordinates(MAF_Hit h) {
 		int queryStart = h.getFrameDir() == FrameDirection.POSITIVE ? h.getQueryStart() : h.getQueryStart() - h.getQueryLength() + 1;
-		int queryEnd = queryStart + h.getQueryLength();
+		int queryEnd = queryStart + h.getQueryLength() - 1;
 		int[] coord = { queryStart, queryEnd };
 		return coord;
 	}
