@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import maf.MAF_Converter;
 import maf.MAF_StreamConverter;
 import maf.MAF_Streamer;
+import util.Finalizer;
 
 public class MainConverter {
 
@@ -114,9 +115,7 @@ public class MainConverter {
 				break;
 			case "-t":
 				tmpFolder = new File(args[i + 1]);
-				if (tmpFolder.exists())
-					deleteDir(tmpFolder);
-				if (!tmpFolder.mkdir()) {
+				if (!tmpFolder.exists() && !tmpFolder.mkdir()) {
 					System.err.print("ERROR: invalid tmp directory " + (args[i + 1]) + " (directory could not be created)");
 					wrongSetting = true;
 				}
@@ -127,6 +126,10 @@ public class MainConverter {
 				break;
 			case "--no-filter":
 				doFiltering = false;
+				break;
+			case "-h":
+			case "--help":
+				wrongSetting = true;
 				break;
 			default:
 				System.err.println("ERROR: unknown paramter " + option);
@@ -139,8 +142,11 @@ public class MainConverter {
 			printOptionsAndQuit();
 
 		Object[] streamResults = null;
-		if (mafFile == null)
+		if (mafFile == null) {
+			tmpFolder = tmpFolder == null ? daaFile.getParentFile() : tmpFolder;
 			streamResults = new MAF_Streamer(queryFile, tmpFolder, chunkSize, cores_streaming, doFiltering, verbose).processInputStream();
+			Runtime.getRuntime().addShutdownHook(new Thread(new Finalizer(tmpFolder)));
+		}
 
 		if (mafFile == null && streamResults == null)
 			printOptionsAndQuit();
@@ -148,7 +154,6 @@ public class MainConverter {
 		if (streamResults != null) {
 			new MAF_StreamConverter().run(daaFile, (ArrayList<File>) streamResults[1], queryFile, cores, verbose, (File) streamResults[0],
 					doFiltering);
-			deleteDir((File) streamResults[2]);
 		}
 		if (mafFile != null)
 			new MAF_Converter().run(daaFile, mafFile, queryFile, cores, verbose, null, doFiltering);
@@ -164,23 +169,10 @@ public class MainConverter {
 		System.out.println("-p\t" + "number of available processors (default: maximal number)");
 		System.out.println("-ps\t" + "number of available processors while input is piped-in (default: 1)");
 		System.out.println("-cs\t" + "chunk-size of temporary MAF files (default: 500m)");
-		System.out.println("-t\t" + "folder for temporary files (default: system's tmp folder)");
+		System.out.println("-t\t" + "folder for temporary files (default: parent folder of the resulting DAA-File)");
 		System.out.println("-v\t" + "sets verbose mode reporting numbers of reads/references/alignments being analyzed)");
 		System.out.println("--no-filter\t" + "disable filtering of dominated alignments (default: filtering activated))");
 		System.exit(0);
-	}
-
-	private static boolean deleteDir(File dir) {
-		if (dir.isDirectory()) {
-			File[] files = dir.listFiles();
-			for (int i = 0; i < files.length; i++) {
-				if (files[i].isDirectory())
-					deleteDir(files[i]);
-				else
-					files[i].delete();
-			}
-		}
-		return dir.delete();
 	}
 
 }

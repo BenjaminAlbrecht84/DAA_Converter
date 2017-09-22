@@ -15,8 +15,6 @@ import startUp.MainConverter;
 
 public class MAF_Streamer {
 
-	private final static File TMP_FOLDER = new File(getJarDirectiory());
-
 	private File queryFile, tmpFolder;
 	private int cores;
 	private boolean verbose, doFiltering;
@@ -39,8 +37,7 @@ public class MAF_Streamer {
 
 		ArrayList<Thread> converterThreads = new ArrayList<Thread>();
 
-		tmpFolder = tmpFolder == null ? new File(TMP_FOLDER.getAbsolutePath() + File.separatorChar + "temporary_daaFiles") : tmpFolder;
-
+		tmpFolder = new File(tmpFolder.getAbsolutePath() + File.separatorChar + "temporary_daaFiles");
 		if (tmpFolder.exists())
 			deleteDir(tmpFolder);
 		if (!tmpFolder.mkdir()) {

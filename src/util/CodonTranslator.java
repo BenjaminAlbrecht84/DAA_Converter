@@ -99,7 +99,7 @@ public class CodonTranslator {
 			codon = codon.concat("" + rna.charAt(i));
 			if (codon.length() == 3) {
 				char p = translateCodon(codon);
-				prot = prot.append(p);
+				prot.append(p);
 				codon = "";
 			}
 		}
