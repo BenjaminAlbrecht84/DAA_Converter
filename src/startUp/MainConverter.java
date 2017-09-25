@@ -143,9 +143,9 @@ public class MainConverter {
 
 		Object[] streamResults = null;
 		if (mafFile == null) {
-			tmpFolder = tmpFolder == null ? daaFile.getParentFile() : tmpFolder;
+			tmpFolder = (tmpFolder == null) ? daaFile.getAbsoluteFile().getParentFile() : tmpFolder;
 			streamResults = new MAF_Streamer(queryFile, tmpFolder, chunkSize, cores_streaming, doFiltering, verbose).processInputStream();
-			Runtime.getRuntime().addShutdownHook(new Thread(new Finalizer(tmpFolder)));
+			Runtime.getRuntime().addShutdownHook(new Thread(new Finalizer((File) streamResults[2])));
 		}
 
 		if (mafFile == null && streamResults == null)
