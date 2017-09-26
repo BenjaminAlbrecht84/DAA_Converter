@@ -10,7 +10,7 @@ Given a query file together with a LAST database you basically have to conduct t
 
 ## Downloading the program
 
-Get the current version from [here](https://github.com/BenjaminAlbrecht84/DAA_Converter/releases/download/v0.8.4/DAA_Converter_v0.8.4.jar).
+Get the current version from [here](https://github.com/BenjaminAlbrecht84/DAA_Converter/releases/download/v0.8.5/DAA_Converter_v0.8.5.jar).
 
 ## Running the program
 
@@ -18,23 +18,27 @@ Get the current version from [here](https://github.com/BenjaminAlbrecht84/DAA_Co
  
 Parameter | Description
 --------- | -----------
--m  | path to MAF-File (can be also be piped-in, no gzip allowed)
--q  | path to query-file in FASTA or FASTQ format (can also be gzipped)
--d  | path of the reported DAA-file 
+-i, --in  | sets path to MAF-File (can also be piped in, no gzip allowed here)
+-r, -- reads  | sets path to query-file in FASTA or FASTQ format (can also be gzipped)
+-o, --out  | sets path of the reported DAA-File
 
 ### Optional: 
 
 Parameter | Description
 --------- | -----------
--p  | number of available processors (default: maximal number)
--t  | folder for temporary files (default: folder where the converter is executed)
--v  | enables verbose mode for reporting numbers of reads/references/alignments being analyzed
---no-filter | disables filtering of dominated alignments (default: filtering activated)
+-top, --topPercent | sets top percent of reads kept during filtering (default: 10.0)
+--p, --procs | sets number of used processors (default: maximal number)
+
+Parameter | Description
+--------- | ----------
+-ps, --streamingProcs | sets number of used processors while input is piped-in (default: 1)
+-cs, --chunkSize |sets chunk-size of temporary MAF files (default: 500mb)
+--t, --tmp  | sets folder for temporary files (default: parent folder of the resulting DAA-File)
 
 Parameter | Description
 --------- | -----------
--ps | number of available processors while input is piped-in (default: 1)
--cs |	chunk-size of temporary MAF files while input is piped-in (default: 500m)
+-v, --verbose | sets verbose mode reporting numbers of reads/references/alignments being analyzed
+-h, --help |	shows program usage and quits
 
 ### Example:
 
