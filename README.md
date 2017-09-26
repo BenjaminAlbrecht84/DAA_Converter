@@ -50,4 +50,4 @@ or the MAF-file is piped in from LAST, like
 
 ``lastal -P8 -F15 <last-db> <read-file> | java -jar DAA_Converter.jar  -q <read-file>``
 
-Notice that latter variant of calling the converter has the advantage that no big MAF-file has to be stored on disk. Here, each chunk of the MAF-file is directly filtered and then compressed into a DAA-file. In the end all the resulting DAA-files are merged into one single DAA-File.
+Notice that the latter variant of calling the converter has the advantage that no big MAF-file has to be stored on disk. Here, each chunk of the MAF-file is directly filtered and then compressed into a DAA-file. In the end all the resulting DAA-files are merged into one single DAA-File.
