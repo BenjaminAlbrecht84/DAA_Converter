@@ -11,8 +11,9 @@ import util.Finalizer;
 
 public class MainConverter {
 
-	public final static double MIN_PROPORTION_COVERAGE = 0.9;
-	public final static double MIN_PROPORTION_SCORE = 0.9;
+	public final static String version = "v0.8.5";
+	public static double MIN_PROPORTION_COVERAGE = 0.9;
+	public static double MIN_PROPORTION_SCORE = 0.9;
 
 	public static void main(String[] args) {
 
@@ -25,6 +26,7 @@ public class MainConverter {
 		File daaFile = null;
 		File tmpFolder = null;
 		Integer cores = Runtime.getRuntime().availableProcessors(), cores_streaming = 1;
+		double topPercent = 10.;
 		boolean doFiltering = true;
 		boolean verbose = false;
 
@@ -32,24 +34,27 @@ public class MainConverter {
 		for (int i = 0; i < args.length; i++) {
 			String option = args[i];
 			switch (option) {
-			case "-m":
+			case "-i":
+			case "--in":
 				mafFile = new File(args[i + 1]);
 				if (!mafFile.isFile()) {
-					System.err.print("ERROR: invalid MAF-file " + (args[i + 1]) + " (file does not exist)");
+					System.err.println("ERROR: invalid .maf file " + (args[i + 1]) + " (file does not exist)");
 					wrongSetting = true;
 				}
 				i++;
 				break;
 			case "-ps":
+			case "—-streamingProcs":
 				try {
 					cores_streaming = Integer.parseInt(args[i + 1]);
 				} catch (Exception e) {
-					System.err.print("ERROR: not an integer " + (args[i + 1]));
+					System.err.println("ERROR: not an integer " + (args[i + 1]));
 					wrongSetting = true;
 				}
 				i++;
 				break;
 			case "-cs":
+			case "—-chunkSize":
 				String s = args[i + 1];
 				String num = s.substring(0, s.length() - 1);
 				try {
@@ -80,24 +85,37 @@ public class MainConverter {
 				}
 				i++;
 				break;
+			case "-top":
+			case "—-topPercent":
+				try {
+					topPercent = Double.parseDouble(args[i + 1]);
+				} catch (Exception e) {
+					System.err.println("ERROR: not a value " + (args[i + 1]));
+					wrongSetting = true;
+				}
+				i++;
+				break;
 			case "-p":
+			case "—-procs":
 				try {
 					cores = Integer.parseInt(args[i + 1]);
 				} catch (Exception e) {
-					System.err.print("ERROR: not an integer " + (args[i + 1]));
+					System.err.println("ERROR: not an integer " + (args[i + 1]));
 					wrongSetting = true;
 				}
 				i++;
 				break;
-			case "-q":
+			case "-r":
+			case "--reads":
 				queryFile = new File(args[i + 1]);
 				if (!queryFile.isFile()) {
-					System.err.print("ERROR: invalid query-file " + (args[i + 1]) + " (file does not exist)");
+					System.err.println("ERROR: invalid reads file " + (args[i + 1]) + " (file does not exist)");
 					wrongSetting = true;
 				}
 				i++;
 				break;
-			case "-d":
+			case "-o":
+			case "--out":
 				daaFile = new File(args[i + 1]);
 				try {
 					if (daaFile.exists())
@@ -114,18 +132,17 @@ public class MainConverter {
 				i++;
 				break;
 			case "-t":
+			case "-tmp":
 				tmpFolder = new File(args[i + 1]);
 				if (!tmpFolder.exists() && !tmpFolder.mkdir()) {
-					System.err.print("ERROR: invalid tmp directory " + (args[i + 1]) + " (directory could not be created)");
+					System.err.println("ERROR: invalid tmp directory " + (args[i + 1]) + " (directory could not be created)");
 					wrongSetting = true;
 				}
 				i++;
 				break;
 			case "-v":
+			case "--verbose":
 				verbose = true;
-				break;
-			case "--no-filter":
-				doFiltering = false;
 				break;
 			case "-h":
 			case "--help":
@@ -140,6 +157,9 @@ public class MainConverter {
 
 		if (daaFile == null || queryFile == null || wrongSetting)
 			printOptionsAndQuit();
+
+		MIN_PROPORTION_COVERAGE = (100. - new Double(topPercent)) / 100.;
+		MIN_PROPORTION_SCORE = (100. - new Double(topPercent)) / 100.;
 
 		Object[] streamResults = null;
 		if (mafFile == null) {
@@ -161,17 +181,29 @@ public class MainConverter {
 	}
 
 	private static void printOptionsAndQuit() {
-		System.out.println("Mandatory: ");
-		System.out.println("-m\t" + "path to MAF-File (can also be piped in, no gzip allowed here)");
-		System.out.println("-q\t" + "path to query-file in FASTA or FASTQ format (can also be gzipped)");
-		System.out.println("-d\t" + "name of the resulting DAA-File");
-		System.out.println("Optional: ");
-		System.out.println("-p\t" + "number of available processors (default: maximal number)");
-		System.out.println("-ps\t" + "number of available processors while input is piped-in (default: 1)");
-		System.out.println("-cs\t" + "chunk-size of temporary MAF files (default: 500m)");
-		System.out.println("-t\t" + "folder for temporary files (default: parent folder of the resulting DAA-File)");
-		System.out.println("-v\t" + "sets verbose mode reporting numbers of reads/references/alignments being analyzed)");
-		System.out.println("--no-filter\t" + "disable filtering of dominated alignments (default: filtering activated))");
+		int space = 25;
+		System.out.println("Input");
+		System.out.println(String.format("%-"+space+"s %s", "\t-i, --in", "sets path to MAF-File (can also be piped in, no gzip allowed here)"));
+		System.out.println(String.format("%-"+space+"s %s", "\t-r, -- reads", "sets path to query-file in FASTA or FASTQ format (can also be gzipped)"));
+		System.out.println("Output");
+		System.out.println(String.format("%-"+space+"s %s", "\t-o, --out", "sets path of the reported DAA-File"));
+		System.out.println("Parameter");
+		System.out.println(String.format("%-"+space+"s %s","\t-top, --topPercent", "sets top percent of reads kept during filtering (default: 10.0)"));
+		System.out.println(String.format("%-"+space+"s %s", "\t-p, --procs", "sets number of used processors (default: maximal number)"));
+		System.out.println(
+				String.format("%-"+space+"s %s", "\t-ps, --streamingProcs", "sets number of used processors while input is piped-in (default: 1)"));
+		System.out.println(String.format("%-"+space+"s %s", "\t-cs, --chunkSize", "sets chunk-size of temporary MAF files (default: 500mb)"));
+		System.out
+				.println(String.format("%-"+space+"s %s", "\t-t, --tmp" , "sets folder for temporary files (default: parent folder of the resulting DAA-File)"));
+		System.out.println("Other");
+		System.out.println(
+				String.format("%-"+space+"s %s", "\t-v, --verbose", "sets verbose mode reporting numbers of reads/references/alignments being analyzed)"));
+		System.out.println(String.format("%-"+space+"s %s", "\t-h, --help", "shows program usage and quits"));
+		System.out.println("AUTHOR");
+		System.out.println("\tBenjamin Albrecht");
+		System.out.println("VERSION");
+		System.out.println("\t"+version);
+		System.out.println("Copyright (C) 2017 Benjamin Albrecht. This program comes with ABSOLUTELY NO WARRANTY.");
 		System.exit(0);
 	}
 
