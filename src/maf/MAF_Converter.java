@@ -21,6 +21,7 @@ import daa.writer.DAA_Writer;
 import hits.Hit;
 import io.FastAQ_Reader;
 import util.Hit_Filter;
+import util.Hit_Filter_parallel;
 import util.LineCounter;
 import util.SparseString;
 
@@ -102,7 +103,14 @@ public class MAF_Converter {
 
 			// filtering hits
 			if (doFiltering) {
-				for (MAF_Hit mafHit : Hit_Filter.run(allHits, headerInfo.getLambda(), headerInfo.getK()))
+				ArrayList<MAF_Hit> filteredHits;
+				if (allHits.size() < Hit_Filter_parallel.TRESHOLD)
+					filteredHits = Hit_Filter.run(allHits, headerInfo.getLambda(), headerInfo.getK());
+				else {
+					filteredHits = Hit_Filter_parallel.run(allHits, headerInfo.getLambda(), headerInfo.getK(), cores);
+					System.out.println("STEP 3 - Continuing writing into daa-file: " + daaFile.getAbsolutePath());
+				}
+				for (MAF_Hit mafHit : filteredHits)
 					hits.add(new Hit(mafHit));
 			} else
 				for (MAF_Hit mafHit : allHits)
