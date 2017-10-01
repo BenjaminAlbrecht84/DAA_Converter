@@ -10,11 +10,10 @@ public class Hit_Filter {
 
 	public static ArrayList<MAF_Hit> run(ArrayList<MAF_Hit> hits, double lambda, double K) {
 
-		ArrayList<MAF_Hit> filteredHits = new ArrayList<MAF_Hit>();
-		int i =0;
+		ArrayList<MAF_Hit> passedHits = new ArrayList<MAF_Hit>();
 		for (MAF_Hit h1 : hits) {
 			
-			// checking if h1 is dominated by another hit
+			// checking whether h1 is dominated by another hit
 			boolean isDominated = false;
 			for (MAF_Hit h2 : hits) {
 				if (!h1.equals(h2)) {
@@ -31,11 +30,11 @@ public class Hit_Filter {
 
 			// only non-dominated hits are reported
 			if (!isDominated)
-				filteredHits.add(h1);
+				passedHits.add(h1);
 
 		}
 
-		return filteredHits;
+		return passedHits;
 
 	}
 

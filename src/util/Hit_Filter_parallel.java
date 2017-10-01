@@ -1,6 +1,8 @@
 package util;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -12,6 +14,8 @@ import startUp.MainConverter;
 
 public class Hit_Filter_parallel {
 
+	private static List<MAF_Hit> passedHits;
+
 	public static final int TRESHOLD = 100000;
 	private static int maxProgress, lastProgress = 0;
 	private static AtomicInteger progress = new AtomicInteger();
@@ -22,7 +26,7 @@ public class Hit_Filter_parallel {
 	public static ArrayList<MAF_Hit> run(ArrayList<MAF_Hit> hits, double lambda, double K, int cores) {
 
 		System.out.println("\nSTEP 3.1 - Filtering " + hits.size() + " hits...");
-
+		passedHits = Collections.synchronizedList(new ArrayList<MAF_Hit>());
 		executor = Executors.newFixedThreadPool(cores);
 
 		int numOfHits = hits.size();
@@ -35,13 +39,9 @@ public class Hit_Filter_parallel {
 		runInParallel(filterThreads);
 		executor.shutdown();
 
-		ArrayList<MAF_Hit> passedHits = new ArrayList<MAF_Hit>();
-		for (Thread t : filterThreads)
-			passedHits.addAll(((FilterThread) t).getPassedHits());
-
 		reportFinish();
 
-		return passedHits;
+		return new ArrayList<MAF_Hit>(passedHits);
 
 	}
 
@@ -75,7 +75,6 @@ public class Hit_Filter_parallel {
 	public static class FilterThread extends Thread {
 
 		private ArrayList<MAF_Hit> hits;
-		private static ArrayList<MAF_Hit> passedHits;
 		private int l, r;
 		private double lambda, K;
 
@@ -89,7 +88,6 @@ public class Hit_Filter_parallel {
 
 		@Override
 		public void run() {
-			passedHits = new ArrayList<MAF_Hit>();
 			applyFilter(hits, l, r, lambda, K);
 		}
 
@@ -119,9 +117,8 @@ public class Hit_Filter_parallel {
 				}
 
 				// only non-dominated hits are reported
-				if (!isDominated){
+				if (!isDominated)
 					passedHits.add(h1);
-				}
 
 			}
 
@@ -159,10 +156,6 @@ public class Hit_Filter_parallel {
 			int queryEnd = queryStart + h.getQueryLength() - 1;
 			int[] coord = { queryStart, queryEnd };
 			return coord;
-		}
-
-		public ArrayList<MAF_Hit> getPassedHits() {
-			return passedHits;
 		}
 
 	}
