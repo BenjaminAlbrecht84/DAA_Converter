@@ -1,9 +1,10 @@
 package util;
 
 import java.io.File;
+import java.io.FileFilter;
 
 public class Finalizer implements Runnable {
-	
+
 	private File tmpFolder;
 
 	public Finalizer(File tmpFolder) {
@@ -14,19 +15,23 @@ public class Finalizer implements Runnable {
 	public void run() {
 		deleteDir(tmpFolder);
 	}
-	
-	private boolean deleteDir(File dir) {
+
+	private void deleteDir(File dir) {
 		if (dir != null && dir.isDirectory()) {
-			File[] files = dir.listFiles();
+			File[] files = dir.listFiles((new FileFilter() {
+				@Override
+				public boolean accept(File file) {
+					return true;
+				}
+			}));
 			for (int i = 0; i < files.length; i++) {
 				if (files[i].isDirectory())
 					deleteDir(files[i]);
 				else
-					files[i].delete();
+					files[i].deleteOnExit();
 			}
-			return dir.delete();
+			dir.deleteOnExit();
 		}
-		return false;
 	}
-	
+
 }

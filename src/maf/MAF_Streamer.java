@@ -3,8 +3,15 @@ package maf;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileAttribute;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -12,6 +19,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import startUp.MainConverter;
+import util.Finalizer;
 
 public class MAF_Streamer {
 
@@ -37,13 +45,19 @@ public class MAF_Streamer {
 
 		ArrayList<Thread> converterThreads = new ArrayList<Thread>();
 
-		tmpFolder = new File(tmpFolder.getAbsolutePath() + File.separatorChar + "temporary_daaFiles");
-		if (tmpFolder.exists())
-			deleteDir(tmpFolder);
-		if (!tmpFolder.mkdir()) {
+		try {
+			tmpFolder = Files.createTempDirectory(tmpFolder.toPath(), "temporary_daa_files", new FileAttribute<?>[] {}).toFile();
+		} catch (IOException e1) {
 			System.err.println("ERROR: cannot create tmp-folder " + tmpFolder.getAbsolutePath() + " (please check -t parameter)");
 			System.exit(0);
 		}
+		Runtime.getRuntime().addShutdownHook(new Thread(new Finalizer(tmpFolder)));
+
+		// tmpFolder = createTemporaryFolder(tmpFolder.getAbsolutePath());
+		// if (!tmpFolder.mkdir()) {
+		// System.err.println("ERROR: cannot create tmp-folder " + tmpFolder.getAbsolutePath() + " (please check -t parameter)");
+		// System.exit(0);
+		// }
 
 		File headerFile = null;
 
@@ -147,6 +161,14 @@ public class MAF_Streamer {
 		Object[] result = { headerFile, daaFiles, tmpFolder };
 		return result;
 
+	}
+
+	private File createTemporaryFolder(String src) {
+		int id = 1;
+		File uniqueFolder = null;
+		while ((uniqueFolder = new File(src + File.separatorChar + "temporary_daaFiles_" + id)).exists())
+			id++;
+		return uniqueFolder;
 	}
 
 	private Thread writeDAAFile(File batchFile, File queryFile, File headerFile, int cores, boolean verbose) {
