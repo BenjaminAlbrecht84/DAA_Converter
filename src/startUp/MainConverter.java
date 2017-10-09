@@ -165,6 +165,7 @@ public class MainConverter {
 		if (mafFile == null) {
 			tmpFolder = (tmpFolder == null) ? daaFile.getAbsoluteFile().getParentFile() : tmpFolder;
 			streamResults = new MAF_Streamer(queryFile, tmpFolder, chunkSize, cores_streaming, doFiltering, verbose).processInputStream();
+			Runtime.getRuntime().addShutdownHook(new Thread(new Finalizer((ArrayList<File>) streamResults[1])));
 		}
 
 		if (mafFile == null && streamResults == null)
@@ -182,26 +183,28 @@ public class MainConverter {
 	private static void printOptionsAndQuit() {
 		int space = 25;
 		System.out.println("Input");
-		System.out.println(String.format("%-"+space+"s %s", "\t-i, --in", "sets path to MAF-File (can also be piped in, no gzip allowed here)"));
-		System.out.println(String.format("%-"+space+"s %s", "\t-r, -- reads", "sets path to query-file in FASTA or FASTQ format (can also be gzipped)"));
+		System.out.println(String.format("%-" + space + "s %s", "\t-i, --in", "sets path to MAF-File (can also be piped in, no gzip allowed here)"));
+		System.out.println(
+				String.format("%-" + space + "s %s", "\t-r, -- reads", "sets path to query-file in FASTA or FASTQ format (can also be gzipped)"));
 		System.out.println("Output");
-		System.out.println(String.format("%-"+space+"s %s", "\t-o, --out", "sets path of the reported DAA-File"));
+		System.out.println(String.format("%-" + space + "s %s", "\t-o, --out", "sets path of the reported DAA-File"));
 		System.out.println("Parameter");
-		System.out.println(String.format("%-"+space+"s %s","\t-top, --topPercent", "sets top percent of reads kept during filtering (default: 10.0)"));
-		System.out.println(String.format("%-"+space+"s %s", "\t-p, --procs", "sets number of used processors (default: maximal number)"));
 		System.out.println(
-				String.format("%-"+space+"s %s", "\t-ps, --streamingProcs", "sets number of used processors while input is piped-in (default: 1)"));
-		System.out.println(String.format("%-"+space+"s %s", "\t-cs, --chunkSize", "sets chunk-size of temporary MAF files (default: 500mb)"));
-		System.out
-				.println(String.format("%-"+space+"s %s", "\t-t, --tmp" , "sets folder for temporary files (default: parent folder of the resulting DAA-File)"));
+				String.format("%-" + space + "s %s", "\t-top, --topPercent", "sets top percent of reads kept during filtering (default: 10.0)"));
+		System.out.println(String.format("%-" + space + "s %s", "\t-p, --procs", "sets number of used processors (default: maximal number)"));
+		System.out.println(String.format("%-" + space + "s %s", "\t-ps, --streamingProcs",
+				"sets number of used processors while input is piped-in (default: 1)"));
+		System.out.println(String.format("%-" + space + "s %s", "\t-cs, --chunkSize", "sets chunk-size of temporary MAF files (default: 500mb)"));
+		System.out.println(String.format("%-" + space + "s %s", "\t-t, --tmp",
+				"sets folder for temporary files (default: parent folder of the resulting DAA-File)"));
 		System.out.println("Other");
-		System.out.println(
-				String.format("%-"+space+"s %s", "\t-v, --verbose", "sets verbose mode reporting numbers of reads/references/alignments being analyzed)"));
-		System.out.println(String.format("%-"+space+"s %s", "\t-h, --help", "shows program usage and quits"));
+		System.out.println(String.format("%-" + space + "s %s", "\t-v, --verbose",
+				"sets verbose mode reporting numbers of reads/references/alignments being analyzed)"));
+		System.out.println(String.format("%-" + space + "s %s", "\t-h, --help", "shows program usage and quits"));
 		System.out.println("AUTHOR");
 		System.out.println("\tBenjamin Albrecht");
 		System.out.println("VERSION");
-		System.out.println("\t"+version);
+		System.out.println("\t" + version);
 		System.out.println("Copyright (C) 2017 Benjamin Albrecht. This program comes with ABSOLUTELY NO WARRANTY.");
 		System.exit(0);
 	}

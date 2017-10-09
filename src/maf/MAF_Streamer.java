@@ -3,15 +3,8 @@ package maf;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileAttribute;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -19,7 +12,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import startUp.MainConverter;
-import util.Finalizer;
 
 public class MAF_Streamer {
 
@@ -44,21 +36,6 @@ public class MAF_Streamer {
 	public Object[] processInputStream() {
 
 		ArrayList<Thread> converterThreads = new ArrayList<Thread>();
-
-		try {
-			tmpFolder = Files.createTempDirectory(tmpFolder.toPath(), "temporary_daa_files", new FileAttribute<?>[] {}).toFile();
-		} catch (IOException e1) {
-			System.err.println("ERROR: cannot create tmp-folder " + tmpFolder.getAbsolutePath() + " (please check -t parameter)");
-			System.exit(0);
-		}
-		Runtime.getRuntime().addShutdownHook(new Thread(new Finalizer(tmpFolder)));
-
-		// tmpFolder = createTemporaryFolder(tmpFolder.getAbsolutePath());
-		// if (!tmpFolder.mkdir()) {
-		// System.err.println("ERROR: cannot create tmp-folder " + tmpFolder.getAbsolutePath() + " (please check -t parameter)");
-		// System.exit(0);
-		// }
-
 		File headerFile = null;
 
 		try {
@@ -100,7 +77,7 @@ public class MAF_Streamer {
 							}
 							if (l.startsWith("# batch") && batchFile == null) {
 								firstWrite = true;
-								batchFile = new File(tmpFolder.getAbsolutePath() + File.separatorChar + "batch_" + (batchCounter++) + ".maf");
+								batchFile = createTmpFile(batchCounter++);
 								batchBuilder = new StringBuilder();
 								batchBuilder.append("# batch " + batchCounter + "\n");
 								lineCounter = 0;
@@ -116,7 +93,7 @@ public class MAF_Streamer {
 						}
 
 						firstWrite = true;
-						batchFile = new File(tmpFolder.getAbsolutePath() + File.separatorChar + "batch_" + (batchCounter++) + ".maf");
+						batchFile = createTmpFile(batchCounter++);
 						batchBuilder = new StringBuilder();
 						batchBuilder.append("# batch " + batchCounter + "\n");
 						lineCounter = 0;
@@ -158,24 +135,21 @@ public class MAF_Streamer {
 		if (daaFiles.isEmpty())
 			return null;
 
-		Object[] result = { headerFile, daaFiles, tmpFolder };
+		Object[] result = { headerFile, daaFiles };
 		return result;
 
 	}
 
-	private File createTemporaryFolder(String src) {
-		int id = 1;
-		File uniqueFolder = null;
-		while ((uniqueFolder = new File(src + File.separatorChar + "temporary_daaFiles_" + id)).exists())
-			id++;
-		return uniqueFolder;
+	private File createTmpFile(int batchCounter) {
+		File f = new File(tmpFolder.getAbsolutePath() + File.separatorChar + "z" + System.currentTimeMillis() + "-" + batchCounter + ".maf");
+		while (f.exists())
+			f = new File(tmpFolder.getAbsolutePath() + File.separatorChar + "z" + System.currentTimeMillis() + "-" + batchCounter + ".maf");
+		return f;
 	}
 
 	private Thread writeDAAFile(File batchFile, File queryFile, File headerFile, int cores, boolean verbose) {
-
 		File daaFile = new File(batchFile.getAbsolutePath().replace(".maf", ".daa"));
 		return new ConverterThread(daaFile, batchFile, queryFile, headerFile, 1, verbose);
-
 	}
 
 	public class ConverterThread extends Thread {
@@ -214,30 +188,6 @@ public class MAF_Streamer {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	}
-
-	private static boolean deleteDir(File dir) {
-		if (dir.isDirectory()) {
-			String[] children = dir.list();
-			for (int i = 0; i < children.length; i++) {
-				boolean success = deleteDir(new File(dir, children[i]));
-				if (!success) {
-					return false;
-				}
-			}
-		}
-		return dir.delete();
-	}
-
-	private static String getJarDirectiory() {
-		try {
-			CodeSource codeSource = MainConverter.class.getProtectionDomain().getCodeSource();
-			File jarFile = new File(codeSource.getLocation().toURI().getPath());
-			return jarFile.getParentFile().getPath();
-		} catch (URISyntaxException e) {
-			e.printStackTrace();
-		}
-		return null;
 	}
 
 }

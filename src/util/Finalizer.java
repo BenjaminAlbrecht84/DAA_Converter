@@ -2,23 +2,25 @@ package util;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.util.ArrayList;
 
 public class Finalizer implements Runnable {
 
-	private File tmpFolder;
+	private ArrayList<File> tmpFiles;
 
-	public Finalizer(File tmpFolder) {
-		this.tmpFolder = tmpFolder;
+	public Finalizer(ArrayList<File> tmpFiles) {
+		this.tmpFiles = tmpFiles;
 	}
 
 	@Override
 	public void run() {
-		deleteDir(tmpFolder);
+		for (File f : tmpFiles)
+			deleteFile(f);
 	}
 
-	private void deleteDir(File dir) {
-		if (dir != null && dir.isDirectory()) {
-			File[] files = dir.listFiles((new FileFilter() {
+	private void deleteFile(File f) {
+		if (f != null && f.isDirectory()) {
+			File[] files = f.listFiles((new FileFilter() {
 				@Override
 				public boolean accept(File file) {
 					return true;
@@ -26,12 +28,18 @@ public class Finalizer implements Runnable {
 			}));
 			for (int i = 0; i < files.length; i++) {
 				if (files[i].isDirectory())
-					deleteDir(files[i]);
+					deleteFile(files[i]);
 				else
-					files[i].deleteOnExit();
+					deleteSingleFile(files[i]);
 			}
-			dir.deleteOnExit();
+			f.deleteOnExit();
 		}
+		if (f != null && f.isFile())
+			deleteSingleFile(f);
+	}
+
+	private void deleteSingleFile(File f) {
+		f.delete();
 	}
 
 }
