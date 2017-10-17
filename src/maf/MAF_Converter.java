@@ -27,8 +27,8 @@ import util.SparseString;
 
 public class MAF_Converter {
 
-	private int maxProgress, lastProgress = 0;
-	private AtomicInteger progress = new AtomicInteger();
+	private int maxProgress;
+	private AtomicInteger progress = new AtomicInteger(), lastProgress = new AtomicInteger();
 
 	private CountDownLatch latch;
 	private ExecutorService executor;
@@ -84,13 +84,12 @@ public class MAF_Converter {
 		progress.set(0);
 		ArrayList<Thread> batchReaders = new ArrayList<Thread>();
 		for (long filePointer : batchSet)
-			batchReaders.add(new BatchReader(filePointer, mafFile, subjectInfos));
+			batchReaders.add(new BatchReader(filePointer, mafFile, subjectInfos, verbose));
 		ArrayList<Hit> hits = new ArrayList<Hit>();
 		long hitCounter = 0;
 		for (int i = 0; i < readInfos.size(); i++) {
 
 			Object[] readInfo = readInfos.get(i);
-
 			// reading-out hits in parallel
 			for (Thread reader : batchReaders)
 				((BatchReader) reader).setReadName(readInfo);
@@ -162,15 +161,15 @@ public class MAF_Converter {
 	private void reportProgress(int delta) {
 		progress.getAndAdd(delta);
 		int p = ((int) ((((double) progress.get() / (double) maxProgress)) * 100) / 10) * 10;
-		if (p > lastProgress && p < 100) {
-			lastProgress = p;
+		if (p > lastProgress.get() && p < 100) {
+			lastProgress.set(p);
 			System.out.print(p + "% ");
 		}
 	}
 
 	private void reportFinish() {
 		progress.set(0);
-		lastProgress = 0;
+		lastProgress.set(0);
 		System.out.print(100 + "%\n");
 	}
 
@@ -181,16 +180,15 @@ public class MAF_Converter {
 		private Object[] readInfo;
 		private ArrayList<MAF_Hit> hits;
 
+		private boolean verbose = false;
 		private int parsedLines = 0;
 		private boolean endOfBatchReached = false;
 		private MAF_Hit lastParsedHit;
 		private byte[] buffer = new byte[1024 * 1024];
 		private int readChars;
-		private int last_i = 0;
+		private int next_i = 0;
 
-		int counter = 0;
-
-		public BatchReader(long filePointer, File mafFile, ArrayList<Object[]> subjectInfo) {
+		public BatchReader(long filePointer, File mafFile, ArrayList<Object[]> subjectInfo, boolean verbose) {
 			try {
 				raf = new RandomAccessFile(mafFile, "r");
 				raf.seek(filePointer);
@@ -199,6 +197,7 @@ public class MAF_Converter {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			this.verbose = verbose;
 			this.subjectInfo = subjectInfo;
 		}
 
@@ -226,9 +225,13 @@ public class MAF_Converter {
 
 				StringBuilder line = new StringBuilder();
 				String[] lineTriple = new String[3];
-				for (int i = last_i; i < readChars; i++) {
+				for (int i = next_i; i < readChars; i++) {
 
 					char c = (char) buffer[i];
+					if (i == readChars - 1) {
+						i = -1;
+						readChars = raf.read(buffer);
+					}
 
 					if (c != '\n')
 						line.append(c);
@@ -238,11 +241,12 @@ public class MAF_Converter {
 						if (parsedLines > 0 && parsedLines % 10 == 0)
 							reportProgress(10);
 
-						last_i = i + 1;
+						next_i = i + 1;
 						String l = line.toString();
 						line = new StringBuilder();
 
-						if (l.startsWith("s") && lineTriple[1] != null) {
+						if (!l.isEmpty() && l.charAt(0) == 's' && lineTriple[1] != null) {
+							// if (l.startsWith("s") && lineTriple[1] != null) {
 
 							lineTriple[2] = l;
 
@@ -254,28 +258,35 @@ public class MAF_Converter {
 							hit.setReadInfo(readInfo);
 							if (hit.makesSense()) {
 								hits.add(hit);
+							} else if (verbose) {
+								System.out.println("Bad MAF entry: ");
+								for (int k = 0; k < 3; k++)
+									System.out.println(lineTriple[k]);
 							}
 
 							lineTriple = new String[3];
 
 						}
 
-						else if (l.startsWith("a"))
+						else if (!l.isEmpty() && l.charAt(0) == 'a')
+							// else if (l.startsWith("a"))
 							lineTriple[0] = l;
 
-						else if (l.startsWith("s") && lineTriple[1] == null)
+						else if (!l.isEmpty() && l.charAt(0) == 's' && lineTriple[1] == null)
+							// else if (l.startsWith("s") && lineTriple[1] == null)
 							lineTriple[1] = l;
 
 					}
 
-					if (i == readChars - 1) {
-						i = -1;
-						readChars = raf.read(buffer);
-					}
+					// System.out.println(i + " / " + readChars);
+					// if (i == readChars - 1) {
+					// next_i = 0;
+					// i = -1;
+					// readChars = raf.read(buffer);
+					// }
 
 				}
 			} catch (
-
 			Exception e) {
 				e.printStackTrace();
 			}
@@ -337,20 +348,20 @@ public class MAF_Converter {
 
 				byte[] buffer = new byte[1024 * 1024];
 				int readChars = 0, colNumber = 0, parsedLines = 0;
-				boolean enterRefLine = false, isRefLine = false, isQueryLine = false, isHashLine = false, startNewBatchBlock = false,
-						startNewBatchSubBlock = false, doBreak = false;
+				boolean enterRefLine = false, isRefLine = false, isQueryLine = false, isHashLine = false, startNewSubBlock = false, doBreak = false;
 				int readIndex = 0, lastReadIndex = 0;
 				Character lastChar = null;
 
 				StringBuilder buf = new StringBuilder();
 				StringBuilder line = new StringBuilder();
 				Object[] subject = new Object[2];
+				int lastI = 0;
 				while ((readChars = raf.read(buffer)) != -1) {
 
 					if (doBreak)
 						break;
 
-					int lastI = 0;
+					// int lastI = 0;
 					for (int i = 0; i < readChars; i++) {
 
 						if (doBreak)
@@ -371,9 +382,9 @@ public class MAF_Converter {
 								isRefLine = false;
 
 							}
-							if (startNewBatchSubBlock) {
+							if (startNewSubBlock) {
 								batchSet.add(raf.getFilePointer() - (readChars - lastI));
-								startNewBatchSubBlock = false;
+								startNewSubBlock = false;
 							}
 							if (isQueryLine) {
 								lastI = i;
@@ -405,12 +416,11 @@ public class MAF_Converter {
 									String query = content;
 									while (!readInfos.get(readIndex)[0].toString().equals(query)) {
 										readIndex++;
-										if (readIndex == readInfos.size()) {
+										if (readIndex == readInfos.size())
 											readIndex = 0;
-										}
 									}
 									if (readIndex < lastReadIndex)
-										startNewBatchSubBlock = true;
+										startNewSubBlock = true;
 									lastReadIndex = readIndex;
 								}
 								if (isRefLine && colNumber == 1)
@@ -418,7 +428,6 @@ public class MAF_Converter {
 								if (isHashLine && colNumber == 1 && buf.toString().equals("batch")) {
 									subject[0] = new SparseString(buf.toString());
 									isHashLine = false;
-									startNewBatchBlock = true;
 								}
 								if (isRefLine && colNumber == 5)
 									subject[1] = Integer.parseInt(buf.toString());
@@ -435,6 +444,8 @@ public class MAF_Converter {
 						lastChar = c;
 
 					}
+
+					lastI -= readChars;
 
 				}
 
@@ -466,7 +477,7 @@ public class MAF_Converter {
 			try {
 				boolean initNewThread = false;
 				byte[] c = new byte[1024];
-				int count = 0;
+				long count = 0;
 				int readChars = 0;
 				long filePointer = 0;
 				processThreads.add(new ProcessThread(file, filePointer, chunk, subjectInfo_Set, batchSet, readInfos, true));

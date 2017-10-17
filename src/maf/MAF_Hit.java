@@ -62,10 +62,7 @@ public class MAF_Hit {
 		frameDir = split[4].equals("+") ? FrameDirection.POSITIVE : FrameDirection.NEGATIVE;
 		ali[0] = split[6].toUpperCase();
 
-		if (ali[0].length() != ali[1].length()) {
-			for (int i = 0; i < lineTriple.length; i++)
-				System.out.println(lineTriple[i]);
-		} else
+		if (ali[0].length() == ali[1].length())
 			editOperations = DAACompressAlignment.run(ali);
 
 	}
