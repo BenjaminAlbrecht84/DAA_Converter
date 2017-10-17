@@ -10,7 +10,7 @@ Given a query file together with a LAST database you basically have to conduct t
 
 ## Downloading the program
 
-Get the current version from [here](https://github.com/BenjaminAlbrecht84/DAA_Converter/releases/download/v0.8.5/DAA_Converter_v0.8.5.jar).
+Get the current version from [here](https://github.com/BenjaminAlbrecht84/DAA_Converter/releases/download/v0.9.0/DAA_Converter_v0.9.0.jar).
 
 ## Running the program
 
