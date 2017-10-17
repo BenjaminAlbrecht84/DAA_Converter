@@ -43,7 +43,7 @@ import util.LineCounter;
 import util.SparseString;
 
 public class MAF_Converter {
-
+	
 	private int maxProgress;
 	private AtomicInteger progress = new AtomicInteger(), lastProgress = new AtomicInteger();
 

@@ -28,13 +28,13 @@ import util.Finalizer;
 
 public class MainConverter {
 
-	public final static String version = "v0.8.5";
+	public final static String version = "v0.9.0";
 	public static double MIN_PROPORTION_COVERAGE = 0.9;
 	public static double MIN_PROPORTION_SCORE = 0.9;
 
 	public static void main(String[] args) {
 
-		System.out.println("MAF2DAA Converter");
+		System.out.println("MAF2DAA Converter "+version);
 		System.out.println("Copyright (C) 2017 Benjamin Albrecht. This program comes with ABSOLUTELY NO WARRANTY.");
 		Integer chunkSize = null;
 		File mafFile = null;
